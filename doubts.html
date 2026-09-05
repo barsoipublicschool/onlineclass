@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ask & Clear Doubts</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen pb-12">
+
+    <!-- TOP APP HEADER -->
+    <div class="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-900 text-white px-4 pt-5 pb-8 shadow-lg">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="dashboard.html" class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition">
+                    <i class="fa-solid fa-arrow-left text-base"></i>
+                </a>
+                <div>
+                    <h1 class="text-lg font-black tracking-wide">Ask Doubts</h1>
+                    <p class="text-xs text-purple-200">Get Solutions from Experts</p>
+                </div>
+            </div>
+            <div class="w-9 h-9 rounded-full bg-purple-600/50 border border-purple-400/40 flex items-center justify-center text-yellow-300">
+                <i class="fa-solid fa-circle-question"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="max-w-md mx-auto px-4 -mt-4 space-y-4">
+
+        <!-- ASK NEW DOUBT BUTTON / FORM CARD -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <h2 class="text-xs font-bold text-gray-700 mb-2 flex items-center gap-1.5">
+                <i class="fa-solid fa-pen-nib text-purple-700"></i> Have a Question?
+            </h2>
+            <form id="doubtForm" onsubmit="submitDoubt(event)" class="space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                    <input type="text" id="studentName" required placeholder="Your Name" class="w-full text-xs p-2.5 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:border-purple-600">
+                    <select id="subjectSelect" required class="w-full text-xs p-2.5 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:border-purple-600 text-gray-600">
+                        <option value="" disabled selected>Select Subject</option>
+                        <option value="Zoology">Zoology</option>
+                        <option value="Botany">Botany</option>
+                        <option value="Chemistry">Chemistry</option>
+                        <option value="Physics">Physics</option>
+                        <option value="General">General</option>
+                    </select>
+                </div>
+                <textarea id="questionText" required rows="3" placeholder="Type your doubt or question here..." class="w-full text-xs p-2.5 bg-gray-50 rounded-xl border border-gray-200 focus:outline-none focus:border-purple-600 resize-none"></textarea>
+                
+                <button type="submit" id="submitBtn" class="w-full py-2.5 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-md transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-paper-plane"></i> Submit Doubt
+                </button>
+            </form>
+        </div>
+
+        <!-- FILTER TABS -->
+        <div class="flex items-center gap-2 text-xs font-semibold bg-white p-1 rounded-2xl border border-gray-100 shadow-sm">
+            <button onclick="filterDoubts('All')" class="tab-btn flex-1 active bg-purple-700 text-white py-2 rounded-xl text-center transition">
+                All Doubts
+            </button>
+            <button onclick="filterDoubts('Resolved')" class="tab-btn flex-1 text-gray-600 py-2 rounded-xl text-center transition">
+                Resolved
+            </button>
+            <button onclick="filterDoubts('Pending')" class="tab-btn flex-1 text-gray-600 py-2 rounded-xl text-center transition">
+                Pending
+            </button>
+        </div>
+
+        <!-- DOUBTS LIST CONTAINER -->
+        <div id="doubtsContainer" class="space-y-3">
+            <!-- Dynamic Data Rendered Here -->
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbxfBbWZUSFiq61jd0aK5CNUWfeGSGo52_LV_KYtMEvluYwFu0oOuvslagEGEZ3mxtMCBw/exec";
+
+        let doubtsList = [];
+        let currentFilter = 'All';
+
+        async function fetchDoubts() {
+            const container = document.getElementById("doubtsContainer");
+            container.innerHTML = `
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl text-purple-700 mb-3"></i>
+                    <p class="text-xs font-semibold">Loading doubts...</p>
+                </div>`;
+
+            try {
+                const res = await fetch(`${API_URL}?action=getDoubts`, { method: 'GET', redirect: 'follow' });
+                const data = await res.json();
+                
+                if (Array.isArray(data)) {
+                    doubtsList = data;
+                    renderDoubts();
+                } else {
+                    throw new Error("Invalid Data");
+                }
+            } catch (err) {
+                console.error("Error:", err);
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-6 text-center border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-circle-exclamation text-3xl text-red-500 mb-2"></i>
+                        <p class="text-gray-700 font-bold text-xs">Failed to load doubts!</p>
+                        <button onclick="fetchDoubts()" class="mt-3 px-4 py-1.5 bg-purple-700 text-white rounded-xl text-xs font-bold">Retry</button>
+                    </div>`;
+            }
+        }
+
+        function renderDoubts() {
+            const container = document.getElementById("doubtsContainer");
+
+            const filtered = doubtsList.filter(d => {
+                const status = (d.answer && d.answer.trim() !== '') ? 'Resolved' : 'Pending';
+                if (currentFilter === 'All') return true;
+                return status.toLowerCase() === currentFilter.toLowerCase();
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-comments text-4xl text-gray-300 mb-2"></i>
+                        <p class="text-gray-600 font-bold text-sm">No Doubts Found!</p>
+                        <p class="text-gray-400 text-xs mt-1">There are no ${currentFilter.toLowerCase()} questions.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(item => {
+                const isResolved = item.answer && item.answer.trim() !== '';
+                const badgeColor = isResolved ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700';
+                const badgeText = isResolved ? 'Resolved' : 'Pending';
+
+                return `
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
+                        <div class="flex items-center justify-between border-b border-gray-50 pb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded ${badgeColor}">${badgeText}</span>
+                                <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-50 text-purple-700">${item.subject || 'General'}</span>
+                            </div>
+                            <span class="text-[10px] text-gray-400">${item.date || ''}</span>
+                        </div>
+
+                        <div>
+                            <p class="text-xs font-bold text-gray-800"><i class="fa-solid fa-circle-question text-purple-600 mr-1"></i> ${item.question}</p>
+                            <p class="text-[10px] text-gray-400 mt-0.5">Asked by: ${item.studentName || 'Student'}</p>
+                        </div>
+
+                        ${isResolved ? `
+                            <div class="bg-purple-50/70 rounded-xl p-3 border border-purple-100 space-y-1">
+                                <div class="flex items-center gap-1.5 text-[11px] font-bold text-purple-800">
+                                    <i class="fa-solid fa-user-tie"></i> Teacher's Answer:
+                                </div>
+                                <p class="text-xs text-gray-700 leading-relaxed pl-4">${item.answer}</p>
+                            </div>
+                        ` : `
+                            <p class="text-[10px] text-amber-600 italic"><i class="fa-regular fa-clock mr-1"></i> Waiting for teacher's reply...</p>
+                        `}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        async function submitDoubt(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById("studentName").value.trim();
+            const subject = document.getElementById("subjectSelect").value;
+            const question = document.getElementById("questionText").value.trim();
+            const btn = document.getElementById("submitBtn");
+
+            if(!name || !subject || !question) {
+                Swal.fire({ icon: 'warning', title: 'Incomplete Details', text: 'Please fill all fields.', confirmButtonColor: '#6b21a8' });
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Submitting...`;
+
+            try {
+                const formData = new URLSearchParams();
+                formData.append('action', 'addDoubt');
+                formData.append('studentName', name);
+                formData.append('subject', subject);
+                formData.append('question', question);
+
+                const res = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData.toString()
+                });
+
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Doubt Submitted!',
+                    text: 'Aapka question submit ho gaya hai. Teacher jaldi hi answer denge.',
+                    confirmButtonColor: '#6b21a8'
+                });
+
+                document.getElementById("doubtForm").reset();
+                fetchDoubts();
+            } catch (err) {
+                console.error("Submission Error:", err);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Failed to submit doubt. Please try again.',
+                    confirmButtonColor: '#6b21a8'
+                });
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Submit Doubt`;
+            }
+        }
+
+        function filterDoubts(status) {
+            currentFilter = status;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.innerText.toLowerCase().includes(status.toLowerCase())) {
+                    btn.className = "tab-btn flex-1 active bg-purple-700 text-white py-2 rounded-xl text-center transition";
+                } else {
+                    btn.className = "tab-btn flex-1 text-gray-600 py-2 rounded-xl text-center transition";
+                }
+            });
+            renderDoubts();
+        }
+
+        // Page load
+        fetchDoubts();
+    </script>
+</body>
+</html>
