@@ -24,11 +24,11 @@
                 </a>
                 <div>
                     <h1 class="text-lg font-black tracking-wide">Study Materials</h1>
-                    <p class="text-xs text-purple-200">PDF Notes, Books & Handouts</p>
+                    <p class="text-xs text-purple-200">Notes, PDFs & eBooks</p>
                 </div>
             </div>
-            <div class="w-9 h-9 rounded-full bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-300">
-                <i class="fa-solid fa-folder-open"></i>
+            <div class="w-9 h-9 rounded-full bg-purple-600/50 border border-purple-400/40 flex items-center justify-center text-yellow-300">
+                <i class="fa-solid fa-book-open"></i>
             </div>
         </div>
     </div>
@@ -39,10 +39,10 @@
         <!-- SEARCH BAR -->
         <div class="bg-white rounded-2xl p-2.5 shadow-sm border border-gray-100 flex items-center gap-2">
             <i class="fa-solid fa-magnifying-glass text-gray-400 ml-2"></i>
-            <input type="text" id="notesSearch" onkeyup="filterNotes()" placeholder="Search topic or subject..." class="w-full text-xs bg-transparent focus:outline-none text-gray-800">
+            <input type="text" id="notesSearch" onkeyup="filterNotes()" placeholder="Search chapter or notes..." class="w-full text-xs bg-transparent focus:outline-none text-gray-800">
         </div>
 
-        <!-- SUBJECT CHIPS -->
+        <!-- SUBJECT FILTER CHIPS -->
         <div class="flex items-center gap-2 overflow-x-auto no-scrollbar text-xs font-semibold">
             <button onclick="filterSubject('All')" class="sub-btn active bg-purple-700 text-white px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
                 All Subjects
@@ -53,9 +53,6 @@
             <button onclick="filterSubject('Botany')" class="sub-btn bg-white border border-gray-200 text-gray-600 px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
                 Botany
             </button>
-            <button onclick="filterSubject('Physics')" class="sub-btn bg-white border border-gray-200 text-gray-600 px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
-                Physics
-            </button>
             <button onclick="filterSubject('Chemistry')" class="sub-btn bg-white border border-gray-200 text-gray-600 px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
                 Chemistry
             </button>
@@ -63,69 +60,55 @@
 
         <!-- NOTES LIST CONTAINER -->
         <div id="notesContainer" class="space-y-3">
-            <!-- Dynamic Notes Rendered Here -->
+            <!-- Dynamic Data Here -->
         </div>
 
     </div>
 
     <script>
-        const materials = [
-            {
-                id: 1,
-                title: "Human Reproduction - Handwritten Notes",
-                subject: "Zoology",
-                class: "Class 12th",
-                size: "4.2 MB",
-                date: "04 Sep 2026",
-                fileUrl: "#"
-            },
-            {
-                id: 2,
-                title: "Cell Cycle & Division Question Bank",
-                subject: "Botany",
-                class: "Class 11th",
-                size: "2.8 MB",
-                date: "01 Sep 2026",
-                fileUrl: "#"
-            },
-            {
-                id: 3,
-                title: "Electrostatics Formula Sheet & Short Notes",
-                subject: "Physics",
-                class: "Class 12th",
-                size: "1.5 MB",
-                date: "28 Aug 2026",
-                fileUrl: "#"
-            },
-            {
-                id: 4,
-                title: "Organic Chemistry Reaction Mechanism",
-                subject: "Chemistry",
-                class: "Class 12th",
-                size: "3.1 MB",
-                date: "20 Aug 2026",
-                fileUrl: "#"
-            }
-        ];
+        const API_URL = "https://script.google.com/macros/s/AKfycbxfBbWZUSFiq61jd0aK5CNUWfeGSGo52_LV_KYtMEvluYwFu0oOuvslagEGEZ3mxtMCBw/exec";
 
+        let materials = [];
         let currentSub = 'All';
+
+        async function fetchMaterialsFromSheet() {
+            const container = document.getElementById("notesContainer");
+            container.innerHTML = `
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl text-purple-700 mb-3"></i>
+                    <p class="text-xs font-semibold">Loading study materials...</p>
+                </div>`;
+
+            try {
+                const res = await fetch(`${API_URL}?action=getMaterials`);
+                materials = await res.json();
+                renderNotes();
+            } catch (err) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-6 text-center border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-circle-exclamation text-3xl text-red-500 mb-2"></i>
+                        <p class="text-gray-700 font-bold text-xs">Failed to load materials!</p>
+                        <button onclick="fetchMaterialsFromSheet()" class="mt-3 px-4 py-1.5 bg-purple-700 text-white rounded-xl text-xs font-bold">Retry</button>
+                    </div>`;
+            }
+        }
 
         function renderNotes() {
             const container = document.getElementById("notesContainer");
             const searchTxt = document.getElementById("notesSearch").value.toLowerCase();
 
             const filtered = materials.filter(m => {
-                const matchesSearch = m.title.toLowerCase().includes(searchTxt) || m.subject.toLowerCase().includes(searchTxt);
-                const matchesSub = currentSub === 'All' || m.subject === currentSub;
+                const matchesSearch = (m.title || '').toLowerCase().includes(searchTxt) || (m.subject || '').toLowerCase().includes(searchTxt);
+                const matchesSub = currentSub === 'All' || (m.subject || '').toLowerCase() === currentSub.toLowerCase();
                 return matchesSearch && matchesSub;
             });
 
             if (filtered.length === 0) {
                 container.innerHTML = `
                     <div class="bg-white rounded-2xl p-8 text-center border border-gray-100 shadow-sm">
-                        <i class="fa-solid fa-file-pdf text-4xl text-gray-300 mb-2"></i>
-                        <p class="text-gray-600 font-bold text-sm">No Study Material Found!</p>
-                        <p class="text-gray-400 text-xs mt-1">Try searching with a different keyword.</p>
+                        <i class="fa-solid fa-folder-open text-4xl text-gray-300 mb-2"></i>
+                        <p class="text-gray-600 font-bold text-sm">No Materials Found!</p>
+                        <p class="text-gray-400 text-xs mt-1">Check back later for new notes.</p>
                     </div>`;
                 return;
             }
@@ -133,20 +116,20 @@
             container.innerHTML = filtered.map(item => `
                 <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between gap-3">
                     <div class="flex items-center gap-3">
-                        <div class="w-11 h-11 rounded-xl bg-red-50 border border-red-100 text-red-600 flex items-center justify-center text-xl flex-shrink-0">
+                        <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center text-lg flex-shrink-0">
                             <i class="fa-solid fa-file-pdf"></i>
                         </div>
                         <div>
-                            <h3 class="font-bold text-xs text-gray-800 leading-snug line-clamp-1">${item.title}</h3>
-                            <div class="flex items-center gap-2 mt-1 text-[10px] text-gray-400 font-medium">
-                                <span class="bg-purple-50 text-purple-700 px-2 py-0.5 rounded-md font-bold">${item.subject}</span>
-                                <span>• ${item.class}</span>
-                                <span>• ${item.size}</span>
+                            <h3 class="font-bold text-xs text-gray-800 leading-snug">${item.title}</h3>
+                            <div class="flex items-center gap-2 text-[10px] text-gray-400 mt-1">
+                                <span class="bg-purple-50 text-purple-700 font-bold px-1.5 py-0.5 rounded">${item.subject || 'General'}</span>
+                                <span>${item.class || ''}</span>
+                                <span>• ${item.size || ''}</span>
                             </div>
                         </div>
                     </div>
-                    <a href="${item.fileUrl}" target="_blank" class="w-9 h-9 rounded-xl bg-purple-700 hover:bg-purple-800 text-white flex items-center justify-center text-xs flex-shrink-0 shadow transition">
-                        <i class="fa-solid fa-download"></i>
+                    <a href="${item.fileUrl || '#'}" target="_blank" class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center hover:bg-purple-700 hover:text-white transition flex-shrink-0">
+                        <i class="fa-solid fa-download text-xs"></i>
                     </a>
                 </div>
             `).join('');
@@ -168,7 +151,7 @@
             renderNotes();
         }
 
-        renderNotes();
+        fetchMaterialsFromSheet();
     </script>
 </body>
 </html>
