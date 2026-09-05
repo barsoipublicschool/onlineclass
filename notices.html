@@ -66,51 +66,58 @@
     </div>
 
     <script>
-        // Sample Announcements Data (Inhe Google Sheet API se bhi fetch kar sakte hain)
-        const notices = [
-            {
-                id: 1,
-                title: "Monthly Test Series Schedule Announced",
-                category: "Exam",
-                tagColor: "bg-purple-100 text-purple-700 border-purple-200",
-                borderColor: "border-purple-600",
-                date: "05 Sep 2026",
-                description: "Upcoming online test series for Class 11th & 12th will commence from next Monday. Syllabus details are uploaded in the Tests section.",
-                isPinned: true
-            },
-            {
-                id: 2,
-                title: "New Study Material Uploaded - Class 12 Zoology",
-                category: "Notes",
-                tagColor: "bg-amber-100 text-amber-700 border-amber-200",
-                borderColor: "border-amber-500",
-                date: "04 Sep 2026",
-                description: "Class 12th Zoology Chapter-4 handwritten PDF notes and important short questions have been published in the Study Materials section.",
-                isPinned: false
-            },
-            {
-                id: 3,
-                title: "Special Sunday Live Doubt Session",
-                category: "Important",
-                tagColor: "bg-rose-100 text-rose-700 border-rose-200",
-                borderColor: "border-rose-500",
-                date: "02 Sep 2026",
-                description: "A live Q&A session will be conducted this Sunday at 11:00 AM. Clear all your doubts regarding recent batches and concepts.",
-                isPinned: false
-            },
-            {
-                id: 4,
-                title: "Holiday Notice: Institutional Off",
-                category: "Important",
-                tagColor: "bg-blue-100 text-blue-700 border-blue-200",
-                borderColor: "border-blue-500",
-                date: "28 Aug 2026",
-                description: "Please note that online support desks will operate with modified hours on the upcoming national holiday.",
-                isPinned: false
-            }
-        ];
-
+        const API_URL = "https://script.google.com/macros/s/AKfycbxfBbWZUSFiq61jd0aK5CNUWfeGSGo52_LV_KYtMEvluYwFu0oOuvslagEGEZ3mxtMCBw/exec";
+        
+        let notices = [];
         let currentCat = 'All';
+
+        async function fetchNoticesFromSheet() {
+            const container = document.getElementById("noticeContainer");
+            container.innerHTML = `
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl text-purple-700 mb-3"></i>
+                    <p class="text-xs font-semibold">Loading announcements...</p>
+                </div>`;
+
+            try {
+                const res = await fetch(`${API_URL}?action=getNotices`);
+                const data = await res.json();
+                
+                notices = data.map((n, index) => {
+                    const cat = String(n.category || 'Important').trim();
+                    let tagColor = 'bg-rose-100 text-rose-700 border-rose-200';
+                    let borderColor = 'border-rose-500';
+
+                    if (cat.toLowerCase() === 'exam') {
+                        tagColor = 'bg-purple-100 text-purple-700 border-purple-200';
+                        borderColor = 'border-purple-600';
+                    } else if (cat.toLowerCase() === 'notes') {
+                        tagColor = 'bg-amber-100 text-amber-700 border-amber-200';
+                        borderColor = 'border-amber-500';
+                    }
+
+                    return {
+                        id: index + 1,
+                        title: n.title || '',
+                        category: cat,
+                        tagColor: tagColor,
+                        borderColor: borderColor,
+                        date: n.date || '',
+                        description: n.description || '',
+                        isPinned: n.isPinned === true || String(n.isPinned).toUpperCase() === 'TRUE'
+                    };
+                });
+
+                renderNotices();
+            } catch (err) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-6 text-center border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-circle-exclamation text-3xl text-red-500 mb-2"></i>
+                        <p class="text-gray-700 font-bold text-xs">Failed to load notices!</p>
+                        <button onclick="fetchNoticesFromSheet()" class="mt-3 px-4 py-1.5 bg-purple-700 text-white rounded-xl text-xs font-bold">Retry</button>
+                    </div>`;
+            }
+        }
 
         function renderNotices() {
             const container = document.getElementById("noticeContainer");
@@ -118,7 +125,7 @@
 
             const filtered = notices.filter(n => {
                 const matchesSearch = n.title.toLowerCase().includes(searchTxt) || n.description.toLowerCase().includes(searchTxt);
-                const matchesCat = currentCat === 'All' || n.category === currentCat;
+                const matchesCat = currentCat === 'All' || n.category.toLowerCase() === currentCat.toLowerCase();
                 return matchesSearch && matchesCat;
             });
 
@@ -171,8 +178,8 @@
             renderNotices();
         }
 
-        // Initial Load
-        renderNotices();
+        // Fetch Live Notices from Sheet on Page Load
+        fetchNoticesFromSheet();
     </script>
 </body>
 </html>
