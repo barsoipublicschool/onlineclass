@@ -25,7 +25,7 @@
                     <i class="fa-solid fa-graduation-cap"></i>
                 </div>
                 <h2 class="text-2xl font-bold text-gray-100">Student Portal</h2>
-                <p class="text-gray-400 text-xs mt-1">Apne Mobile / Email aur Password se Login karein</p>
+                <p class="text-gray-400 text-xs mt-1">Login with Mobile/ Email and Password  </p>
             </div>
 
             <!-- TAB SWITCHER BUTTONS -->
@@ -298,7 +298,7 @@
                     Swal.fire({
                         icon: 'error',
                         title: 'Login Failed',
-                        text: 'Mobile/Email ya Password galat hai!',
+                        text: ' Wrong Password or Mobile/Email!',
                         confirmButtonColor: '#7e22ce'
                     });
                 }
@@ -306,7 +306,7 @@
                 Swal.fire({
                     icon: 'error',
                     title: 'Server Error',
-                    text: 'Google Sheet database connect nahi ho pa raha hai.'
+                    text: 'Could not connect.'
                 });
             } finally {
                 btn.innerHTML = `<i class="fa-solid fa-right-to-bracket"></i> Login to Portal`;
@@ -428,7 +428,7 @@
                     <div class="bg-white rounded-2xl p-8 text-center border border-gray-100 shadow-sm my-4">
                         <i class="fa-solid fa-graduation-cap text-4xl text-gray-300 mb-2"></i>
                         <p class="text-gray-600 font-bold text-sm">Koi Batch Nahi Mila!</p>
-                        <p class="text-gray-400 text-xs mt-1">${currentViewMode === 'my' ? 'Aapne abhi tak koi batch unlock nahi kiya hai ya aapka verification pending hai.' : 'Sabhi available batches aapne buy kar liye hain.'}</p>
+                        <p class="text-gray-400 text-xs mt-1">${currentViewMode === 'my' ? 'No Batch Allocated!You haven't unlocked a batch yet, or your verification is still under process..' : 'You have purchased all available batches.'}</p>
                     </div>`;
                 return;
             }
