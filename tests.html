@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Tests & Quizzes</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen pb-12">
+
+    <!-- TOP APP HEADER -->
+    <div class="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-900 text-white px-4 pt-5 pb-8 shadow-lg">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="dashboard.html" class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition">
+                    <i class="fa-solid fa-arrow-left text-base"></i>
+                </a>
+                <div>
+                    <h1 class="text-lg font-black tracking-wide">Test Series</h1>
+                    <p class="text-xs text-purple-200">Online Quizzes & Assessments</p>
+                </div>
+            </div>
+            <div class="w-9 h-9 rounded-full bg-rose-500/20 border border-rose-400/40 flex items-center justify-center text-rose-300">
+                <i class="fa-solid fa-list-check"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="max-w-md mx-auto px-4 -mt-4 space-y-4">
+
+        <!-- STATUS TABS -->
+        <div class="bg-white p-1 rounded-2xl shadow-sm border border-gray-100 flex text-xs font-bold text-gray-500">
+            <button onclick="switchTestTab('active')" id="tabActive" class="flex-1 py-2 text-center rounded-xl bg-purple-700 text-white transition">
+                Live / Active
+            </button>
+            <button onclick="switchTestTab('upcoming')" id="tabUpcoming" class="flex-1 py-2 text-center rounded-xl hover:text-gray-800 transition">
+                Upcoming
+            </button>
+            <button onclick="switchTestTab('completed')" id="tabCompleted" class="flex-1 py-2 text-center rounded-xl hover:text-gray-800 transition">
+                Completed
+            </button>
+        </div>
+
+        <!-- TESTS LIST CONTAINER -->
+        <div id="testsContainer" class="space-y-3">
+            <!-- Dynamic Tests Rendered Here -->
+        </div>
+
+    </div>
+
+    <script>
+        const testsList = [
+            {
+                id: 1,
+                title: "Weekly Mock Test - Class 12 Biology",
+                questions: "30 Qs",
+                time: "45 Mins",
+                marks: "120 Marks",
+                status: "active",
+                date: "Today, 03:00 PM"
+            },
+            {
+                id: 2,
+                title: "Chapter Quiz: Human Physiology",
+                questions: "20 Qs",
+                time: "30 Mins",
+                marks: "80 Marks",
+                status: "active",
+                date: "Live Now"
+            },
+            {
+                id: 3,
+                title: "Full Length NEET Pattern Test - 01",
+                questions: "180 Qs",
+                time: "180 Mins",
+                marks: "720 Marks",
+                status: "upcoming",
+                date: "12 Sep 2026"
+            },
+            {
+                id: 4,
+                title: "Class 11 Botany Term Assessment",
+                questions: "50 Qs",
+                time: "60 Mins",
+                marks: "200 Marks",
+                status: "completed",
+                score: "165 / 200",
+                date: "25 Aug 2026"
+            }
+        ];
+
+        let currentTab = 'active';
+
+        function renderTests() {
+            const container = document.getElementById("testsContainer");
+            const filtered = testsList.filter(t => t.status === currentTab);
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-vial-circle-check text-4xl text-gray-300 mb-2"></i>
+                        <p class="text-gray-600 font-bold text-sm">No Tests Found!</p>
+                        <p class="text-gray-400 text-xs mt-1">There are no ${currentTab} tests right now.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(test => `
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-md ${test.status === 'active' ? 'bg-green-100 text-green-700' : test.status === 'upcoming' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}">
+                            ${test.status === 'active' ? '• LIVE NOW' : test.status === 'upcoming' ? 'UPCOMING' : 'FINISHED'}
+                        </span>
+                        <span class="text-[10px] font-medium text-gray-400">
+                            <i class="fa-regular fa-calendar mr-1"></i>${test.date}
+                        </span>
+                    </div>
+
+                    <h3 class="font-bold text-sm text-gray-800 leading-snug">${test.title}</h3>
+
+                    <div class="flex items-center gap-3 text-[11px] text-gray-500 font-semibold bg-gray-50 p-2 rounded-xl">
+                        <span><i class="fa-regular fa-file-lines text-purple-600 mr-1"></i>${test.questions}</span>
+                        <span><i class="fa-regular fa-clock text-blue-600 mr-1"></i>${test.time}</span>
+                        <span><i class="fa-solid fa-trophy text-amber-500 mr-1"></i>${test.marks}</span>
+                    </div>
+
+                    <div class="pt-1">
+                        ${test.status === 'active' ? `
+                            <button onclick="startTest(${test.id})" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs py-2.5 rounded-xl transition shadow flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-play"></i> Start Test Now
+                            </button>
+                        ` : test.status === 'upcoming' ? `
+                            <button disabled class="w-full bg-gray-100 border border-gray-200 text-gray-400 font-bold text-xs py-2.5 rounded-xl cursor-not-allowed">
+                                <i class="fa-solid fa-lock mr-1"></i> Unlocks on ${test.date}
+                            </button>
+                        ` : `
+                            <div class="flex items-center justify-between bg-purple-50 p-2.5 rounded-xl text-xs">
+                                <span class="font-bold text-purple-900">Your Score: ${test.score}</span>
+                                <button onclick="viewResult(${test.id})" class="text-purple-700 font-extrabold hover:underline">View Analysis</button>
+                            </div>
+                        `}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function switchTestTab(tab) {
+            currentTab = tab;
+            ['Active', 'Upcoming', 'Completed'].forEach(t => {
+                const btn = document.getElementById(`tab${t}`);
+                if (t.toLowerCase() === tab) {
+                    btn.className = "flex-1 py-2 text-center rounded-xl bg-purple-700 text-white transition";
+                } else {
+                    btn.className = "flex-1 py-2 text-center rounded-xl text-gray-500 hover:text-gray-800 transition";
+                }
+            });
+            renderTests();
+        }
+
+        function startTest(id) {
+            alert("Redirecting to test environment for Test ID: " + id);
+        }
+
+        function viewResult(id) {
+            alert("Showing performance analysis for Test ID: " + id);
+        }
+
+        renderTests();
+    </script>
+</body>
+</html>
