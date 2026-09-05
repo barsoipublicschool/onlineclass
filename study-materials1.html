@@ -68,7 +68,7 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbztJdhlg7AALgUUuHbh_e2xPfCHmJOZQROCrl-RJrV4LlCGZPxQCrg7Xac4PuijC-6N1A/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbxfBbWZUSFiq61jd0aK5CNUWfeGSGo52_LV_KYtMEvluYwFu0oOuvslagEGEZ3mxtMCBw/exec";
 
         let materials = [];
         let currentSub = 'All';
@@ -82,10 +82,17 @@
                 </div>`;
 
             try {
-                const res = await fetch(`${API_URL}?action=getMaterials`);
-                materials = await res.json();
-                renderNotes();
+                const res = await fetch(`${API_URL}?action=getMaterials`, { method: 'GET', redirect: 'follow' });
+                const data = await res.json();
+                
+                if (Array.isArray(data)) {
+                    materials = data;
+                    renderNotes();
+                } else {
+                    throw new Error("Invalid Response Format");
+                }
             } catch (err) {
+                console.error("Fetch Error:", err);
                 container.innerHTML = `
                     <div class="bg-white rounded-2xl p-6 text-center border border-gray-100 shadow-sm">
                         <i class="fa-solid fa-circle-exclamation text-3xl text-red-500 mb-2"></i>
@@ -95,8 +102,8 @@
 
                 Swal.fire({
                     icon: 'error',
-                    title: 'Error!',
-                    text: 'Unable to connect to server. Please check your connection.',
+                    title: 'Connection Error',
+                    text: 'Google Sheet se data connect nahi ho pa raha hai. Step 1 (New Deployment) check karein.',
                     confirmButtonColor: '#6b21a8'
                 });
             }
