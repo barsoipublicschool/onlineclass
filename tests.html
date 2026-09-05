@@ -8,6 +8,12 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans min-h-screen pb-12">
 
@@ -20,11 +26,11 @@
                 </a>
                 <div>
                     <h1 class="text-lg font-black tracking-wide">Test Series</h1>
-                    <p class="text-xs text-purple-200">Online Quizzes & Assessments</p>
+                    <p class="text-xs text-purple-200">Online Exams & Mock Tests</p>
                 </div>
             </div>
-            <div class="w-9 h-9 rounded-full bg-rose-500/20 border border-rose-400/40 flex items-center justify-center text-rose-300">
-                <i class="fa-solid fa-list-check"></i>
+            <div class="w-9 h-9 rounded-full bg-purple-600/50 border border-purple-400/40 flex items-center justify-center text-yellow-300">
+                <i class="fa-solid fa-pen-to-square"></i>
             </div>
         </div>
     </div>
@@ -33,14 +39,14 @@
     <div class="max-w-md mx-auto px-4 -mt-4 space-y-4">
 
         <!-- STATUS TABS -->
-        <div class="bg-white p-1 rounded-2xl shadow-sm border border-gray-100 flex text-xs font-bold text-gray-500">
-            <button onclick="switchTestTab('active')" id="tabActive" class="flex-1 py-2 text-center rounded-xl bg-purple-700 text-white transition">
-                Live / Active
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar text-xs font-semibold bg-white p-1 rounded-2xl border border-gray-100 shadow-sm">
+            <button onclick="filterStatus('active')" class="tab-btn flex-1 active bg-purple-700 text-white py-2 rounded-xl text-center transition">
+                Active Tests
             </button>
-            <button onclick="switchTestTab('upcoming')" id="tabUpcoming" class="flex-1 py-2 text-center rounded-xl hover:text-gray-800 transition">
+            <button onclick="filterStatus('upcoming')" class="tab-btn flex-1 text-gray-600 py-2 rounded-xl text-center transition">
                 Upcoming
             </button>
-            <button onclick="switchTestTab('completed')" id="tabCompleted" class="flex-1 py-2 text-center rounded-xl hover:text-gray-800 transition">
+            <button onclick="filterStatus('completed')" class="tab-btn flex-1 text-gray-600 py-2 rounded-xl text-center transition">
                 Completed
             </button>
         </div>
@@ -53,123 +59,135 @@
     </div>
 
     <script>
-        const testsList = [
-            {
-                id: 1,
-                title: "Weekly Mock Test - Class 12 Biology",
-                questions: "30 Qs",
-                time: "45 Mins",
-                marks: "120 Marks",
-                status: "active",
-                date: "Today, 03:00 PM"
-            },
-            {
-                id: 2,
-                title: "Chapter Quiz: Human Physiology",
-                questions: "20 Qs",
-                time: "30 Mins",
-                marks: "80 Marks",
-                status: "active",
-                date: "Live Now"
-            },
-            {
-                id: 3,
-                title: "Full Length NEET Pattern Test - 01",
-                questions: "180 Qs",
-                time: "180 Mins",
-                marks: "720 Marks",
-                status: "upcoming",
-                date: "12 Sep 2026"
-            },
-            {
-                id: 4,
-                title: "Class 11 Botany Term Assessment",
-                questions: "50 Qs",
-                time: "60 Mins",
-                marks: "200 Marks",
-                status: "completed",
-                score: "165 / 200",
-                date: "25 Aug 2026"
-            }
-        ];
+        const API_URL = "https://script.google.com/macros/s/AKfycbztJdhlg7AALgUUuHbh_e2xPfCHmJOZQROCrl-RJrV4LlCGZPxQCrg7Xac4PuijC-6N1A/exec";
 
+        let testsList = [];
         let currentTab = 'active';
+
+        async function fetchTestsFromSheet() {
+            const container = document.getElementById("testsContainer");
+            container.innerHTML = `
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl text-purple-700 mb-3"></i>
+                    <p class="text-xs font-semibold">Loading test series...</p>
+                </div>`;
+
+            try {
+                const res = await fetch(`${API_URL}?action=getTests`);
+                testsList = await res.json();
+                renderTests();
+            } catch (err) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-6 text-center border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-circle-exclamation text-3xl text-red-500 mb-2"></i>
+                        <p class="text-gray-700 font-bold text-xs">Failed to load tests!</p>
+                        <button onclick="fetchTestsFromSheet()" class="mt-3 px-4 py-1.5 bg-purple-700 text-white rounded-xl text-xs font-bold">Retry</button>
+                    </div>`;
+
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error!',
+                    text: 'Unable to connect to server. Please check your connection.',
+                    confirmButtonColor: '#6b21a8'
+                });
+            }
+        }
 
         function renderTests() {
             const container = document.getElementById("testsContainer");
-            const filtered = testsList.filter(t => t.status === currentTab);
+
+            const filtered = testsList.filter(t => (t.status || 'active').toLowerCase() === currentTab.toLowerCase());
 
             if (filtered.length === 0) {
                 container.innerHTML = `
                     <div class="bg-white rounded-2xl p-8 text-center border border-gray-100 shadow-sm">
-                        <i class="fa-solid fa-vial-circle-check text-4xl text-gray-300 mb-2"></i>
-                        <p class="text-gray-600 font-bold text-sm">No Tests Found!</p>
-                        <p class="text-gray-400 text-xs mt-1">There are no ${currentTab} tests right now.</p>
+                        <i class="fa-solid fa-clipboard-check text-4xl text-gray-300 mb-2"></i>
+                        <p class="text-gray-600 font-bold text-sm">No Tests Available!</p>
+                        <p class="text-gray-400 text-xs mt-1">There are no ${currentTab} tests at the moment.</p>
                     </div>`;
                 return;
             }
 
-            container.innerHTML = filtered.map(test => `
-                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
-                    <div class="flex items-center justify-between">
-                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-md ${test.status === 'active' ? 'bg-green-100 text-green-700' : test.status === 'upcoming' ? 'bg-amber-100 text-amber-700' : 'bg-gray-100 text-gray-600'}">
-                            ${test.status === 'active' ? '• LIVE NOW' : test.status === 'upcoming' ? 'UPCOMING' : 'FINISHED'}
-                        </span>
-                        <span class="text-[10px] font-medium text-gray-400">
-                            <i class="fa-regular fa-calendar mr-1"></i>${test.date}
-                        </span>
-                    </div>
+            container.innerHTML = filtered.map(t => {
+                let btnHtml = '';
+                if (currentTab === 'active') {
+                    btnHtml = `<button onclick="startTest('${t.title.replace(/'/g, "\\'")}', '${t.testUrl}')" class="w-full mt-3 py-2 bg-purple-700 hover:bg-purple-800 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-play text-[10px]"></i> Attempt Test Now
+                    </button>`;
+                } else if (currentTab === 'upcoming') {
+                    btnHtml = `<div class="w-full mt-3 py-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-2">
+                        <i class="fa-regular fa-clock"></i> Starts On: ${t.date || 'Soon'}
+                    </div>`;
+                } else {
+                    btnHtml = `<div class="w-full mt-3 py-2 bg-gray-100 text-gray-500 rounded-xl text-xs font-bold text-center flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-lock"></i> Test Expired
+                    </div>`;
+                }
 
-                    <h3 class="font-bold text-sm text-gray-800 leading-snug">${test.title}</h3>
+                return `
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-2">
+                        <div class="flex items-center justify-between">
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-purple-100 text-purple-700">
+                                ${t.questions || 'Quiz'}
+                            </span>
+                            <span class="text-[10px] font-medium text-gray-400">
+                                <i class="fa-regular fa-clock mr-1"></i>${t.time || 'N/A'}
+                            </span>
+                        </div>
 
-                    <div class="flex items-center gap-3 text-[11px] text-gray-500 font-semibold bg-gray-50 p-2 rounded-xl">
-                        <span><i class="fa-regular fa-file-lines text-purple-600 mr-1"></i>${test.questions}</span>
-                        <span><i class="fa-regular fa-clock text-blue-600 mr-1"></i>${test.time}</span>
-                        <span><i class="fa-solid fa-trophy text-amber-500 mr-1"></i>${test.marks}</span>
-                    </div>
+                        <h3 class="font-bold text-sm text-gray-800">${t.title}</h3>
 
-                    <div class="pt-1">
-                        ${test.status === 'active' ? `
-                            <button onclick="startTest(${test.id})" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold text-xs py-2.5 rounded-xl transition shadow flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-play"></i> Start Test Now
-                            </button>
-                        ` : test.status === 'upcoming' ? `
-                            <button disabled class="w-full bg-gray-100 border border-gray-200 text-gray-400 font-bold text-xs py-2.5 rounded-xl cursor-not-allowed">
-                                <i class="fa-solid fa-lock mr-1"></i> Unlocks on ${test.date}
-                            </button>
-                        ` : `
-                            <div class="flex items-center justify-between bg-purple-50 p-2.5 rounded-xl text-xs">
-                                <span class="font-bold text-purple-900">Your Score: ${test.score}</span>
-                                <button onclick="viewResult(${test.id})" class="text-purple-700 font-extrabold hover:underline">View Analysis</button>
-                            </div>
-                        `}
+                        <div class="flex items-center gap-4 text-xs text-gray-500 pt-1">
+                            <span><i class="fa-solid fa-award text-yellow-500 mr-1"></i>${t.marks || 'Full Marks'}</span>
+                        </div>
+
+                        ${btnHtml}
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
-        function switchTestTab(tab) {
-            currentTab = tab;
-            ['Active', 'Upcoming', 'Completed'].forEach(t => {
-                const btn = document.getElementById(`tab${t}`);
-                if (t.toLowerCase() === tab) {
-                    btn.className = "flex-1 py-2 text-center rounded-xl bg-purple-700 text-white transition";
+        function filterStatus(status) {
+            currentTab = status;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                if (btn.innerText.toLowerCase().includes(status.toLowerCase())) {
+                    btn.className = "tab-btn flex-1 active bg-purple-700 text-white py-2 rounded-xl text-center transition";
                 } else {
-                    btn.className = "flex-1 py-2 text-center rounded-xl text-gray-500 hover:text-gray-800 transition";
+                    btn.className = "tab-btn flex-1 text-gray-600 py-2 rounded-xl text-center transition";
                 }
             });
             renderTests();
         }
 
-        function startTest(id) {
-            alert("Redirecting to test environment for Test ID: " + id);
+        function startTest(title, url) {
+            if (!url || url === '#' || url.trim() === '') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Link Unavailable',
+                    text: 'Is test ka link abhi update nahi hua hai.',
+                    confirmButtonColor: '#6b21a8'
+                });
+                return;
+            }
+
+            Swal.fire({
+                title: 'Start Test?',
+                text: `Kya aap "${title}" start karna chahte hain?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#6b21a8',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Haan, Start Karein!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.open(url, '_blank');
+                }
+            });
         }
 
-        function viewResult(id) {
-            alert("Showing performance analysis for Test ID: " + id);
-        }
-
-        renderTests();
+        // Page Load Par Data Fetch Karein
+        fetchTestsFromSheet();
     </script>
 </body>
 </html>
