@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Student Portal</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen pb-12">
+
+    <!-- TOP HEADER -->
+    <div class="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-900 text-white px-4 pt-5 pb-8 shadow-lg">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="index.html" class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition">
+                    <i class="fa-solid fa-arrow-left text-base"></i>
+                </a>
+                <div>
+                    <h1 class="text-lg font-black tracking-wide">Student Dashboard</h1>
+                    <p class="text-xs text-purple-200" id="studentGreeting">Welcome back!</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-1.5 bg-yellow-500/20 border border-yellow-400/40 text-yellow-300 px-3 py-1 rounded-full text-xs font-bold">
+                <i class="fa-solid fa-coins text-yellow-400"></i>
+                <span>300</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN DASHBOARD CONTENT -->
+    <div class="max-w-md mx-auto px-4 -mt-4 space-y-4">
+
+        <!-- QUICK STATS CARDS -->
+        <div class="grid grid-cols-2 gap-3">
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-book-bookmark"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] text-gray-400 font-semibold uppercase">Batches</p>
+                    <h3 class="text-lg font-black text-gray-800" id="totalBatches">Active</h3>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-green-100 text-green-700 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-clipboard-user"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] text-gray-400 font-semibold uppercase">Attendance</p>
+                    <h3 class="text-lg font-black text-gray-800">92%</h3>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-file-pen"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] text-gray-400 font-semibold uppercase">Pending HW</p>
+                    <h3 class="text-lg font-black text-gray-800">2 Task</h3>
+                </div>
+            </div>
+
+            <div class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center text-lg">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+                <div>
+                    <p class="text-[11px] text-gray-400 font-semibold uppercase">Rank</p>
+                    <h3 class="text-lg font-black text-gray-800">Top 10</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUICK ACCESS MENU -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <h2 class="font-bold text-sm text-gray-800 mb-3 flex items-center gap-2">
+                <i class="fa-solid fa-bolt text-yellow-500"></i> Quick Actions
+            </h2>
+            <div class="grid grid-cols-4 gap-2 text-center text-xs font-semibold">
+                <a href="index.html" class="p-2 rounded-xl hover:bg-gray-50 flex flex-col items-center gap-1 text-gray-700">
+                    <div class="w-10 h-10 rounded-full bg-purple-50 text-purple-700 flex items-center justify-center text-base">
+                        <i class="fa-solid fa-store"></i>
+                    </div>
+                    Store
+                </a>
+                <a href="study-materials.html" class="p-2 rounded-xl hover:bg-gray-50 flex flex-col items-center gap-1 text-gray-700">
+                    <div class="w-10 h-10 rounded-full bg-blue-50 text-blue-700 flex items-center justify-center text-base">
+                        <i class="fa-solid fa-folder-open"></i>
+                    </div>
+                    Notes
+                </a>
+                <a href="tests.html" class="p-2 rounded-xl hover:bg-gray-50 flex flex-col items-center gap-1 text-gray-700">
+                    <div class="w-10 h-10 rounded-full bg-rose-50 text-rose-700 flex items-center justify-center text-base">
+                        <i class="fa-solid fa-list-check"></i>
+                    </div>
+                    Tests
+                </a>
+                <a href="doubts.html" class="p-2 rounded-xl hover:bg-gray-50 flex flex-col items-center gap-1 text-gray-700">
+                    <div class="w-10 h-10 rounded-full bg-indigo-50 text-indigo-700 flex items-center justify-center text-base">
+                        <i class="fa-solid fa-headset"></i>
+                    </div>
+                    Doubts
+                </a>
+            </div>
+        </div>
+
+        <!-- NOTICE BOARD CARD -->
+        <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+            <div class="flex justify-between items-center mb-3">
+                <h2 class="font-bold text-sm text-gray-800 flex items-center gap-2">
+                    <i class="fa-solid fa-bullhorn text-teal-500"></i> Latest Announcements
+                </h2>
+                <a href="notices.html" class="text-xs font-bold text-purple-700 hover:underline">View All</a>
+            </div>
+            <div class="space-y-2">
+                <div class="p-3 bg-gray-50 rounded-xl border-l-4 border-purple-600">
+                    <p class="text-xs font-bold text-gray-800">Monthly Test Series Schedule</p>
+                    <p class="text-[11px] text-gray-500 mt-0.5">Upcoming online tests start from next Monday. Check your test section.</p>
+                </div>
+                <div class="p-3 bg-gray-50 rounded-xl border-l-4 border-amber-500">
+                    <p class="text-xs font-bold text-gray-800">New Study Material Uploaded</p>
+                    <p class="text-[11px] text-gray-500 mt-0.5">Class 12th Zoology Chapter-4 PDF Notes are available now.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // Set logged-in student info
+        window.addEventListener("DOMContentLoaded", () => {
+            const savedStudent = localStorage.getItem("cw_student");
+            if (savedStudent) {
+                const student = JSON.parse(savedStudent);
+                const name = student.FullName || student.Name || 'Student';
+                document.getElementById("studentGreeting").innerText = `Hi, ${name}! Ready to study?`;
+            } else {
+                window.location.href = "index.html";
+            }
+        });
+    </script>
+</body>
+</html>
