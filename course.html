@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Classroom - PW Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-950 text-white font-sans min-h-screen pb-16">
+
+    <header class="bg-gray-900 border-b border-gray-800 px-4 py-3 sticky top-0 z-40 shadow-lg">
+        <div class="max-w-6xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <a href="student.html" class="w-9 h-9 bg-gray-800 hover:bg-purple-900/50 text-gray-300 hover:text-white rounded-xl flex items-center justify-center transition border border-gray-700">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h1 id="topCourseTitle" class="text-sm md:text-base font-bold text-white line-clamp-1">Loading Batch...</h1>
+                    <p id="topCourseCategory" class="text-[10px] text-purple-400 font-semibold">CLASSROOM</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button id="adminToggleBtn" onclick="toggleAdminAccess()" class="bg-purple-950 hover:bg-purple-900 text-purple-300 text-xs px-3 py-1.5 rounded-xl border border-purple-800 flex items-center gap-1.5 transition font-semibold">
+                    <i class="fa-solid fa-user-gear"></i> Admin Mode
+                </button>
+                <button onclick="loadCourseContent()" class="bg-gray-800 hover:bg-gray-700 text-xs px-3 py-1.5 rounded-xl border border-gray-700 flex items-center gap-1.5 transition text-gray-300">
+                    <i class="fa-solid fa-rotate-right text-purple-400"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-6xl mx-auto px-4 mt-4">
+
+        <div class="bg-gradient-to-r from-purple-900 via-indigo-900 to-gray-900 rounded-2xl p-5 border border-purple-800/50 shadow-2xl mb-6 relative overflow-hidden">
+            <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <span class="bg-yellow-400 text-black text-[10px] font-black px-2 py-0.5 rounded shadow uppercase">ENROLLED BATCH</span>
+                    <h2 id="bannerTitle" class="text-xl md:text-2xl font-black mt-2 text-white">Loading Course Details...</h2>
+                    <p id="bannerDesc" class="text-xs text-gray-300 mt-1 max-w-2xl line-clamp-2">Batch lectures and study resources loading...</p>
+                </div>
+                <div class="flex items-center gap-2 bg-gray-900/80 px-4 py-2 rounded-xl border border-gray-700 text-xs text-gray-300">
+                    <i class="fa-solid fa-layer-group text-purple-400"></i>
+                    <span id="contentCount">0 Resources</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-3 mb-4 border-b border-gray-800 text-xs font-bold">
+            <button id="tabAll" onclick="switchFilter('All')" class="tab-btn bg-purple-700 text-white px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-border-all"></i> All Contents
+            </button>
+            <button id="tabVideo" onclick="switchFilter('Video')" class="tab-btn bg-gray-900 text-gray-400 border border-gray-800 hover:bg-gray-800 px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-circle-play text-red-500"></i> Video Lectures
+            </button>
+            <button id="tabPDF" onclick="switchFilter('PDF')" class="tab-btn bg-gray-900 text-gray-400 border border-gray-800 hover:bg-gray-800 px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-file-pdf text-amber-500"></i> PDF Notes & DPP
+            </button>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <div id="contentListWrapper" class="lg:col-span-3 transition-all duration-300">
+                <div id="contentList" class="space-y-3">
+                    <div class="bg-gray-900 p-8 rounded-2xl border border-gray-800 text-center text-gray-400">
+                        <i class="fa-solid fa-circle-notch fa-spin text-3xl text-purple-600 mb-3"></i>
+                        <p class="text-sm font-semibold">Google Sheet se lectures load ho rahe hain...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div id="adminPanel" class="hidden">
+                <div class="bg-gray-900 p-5 rounded-2xl border border-purple-800/80 sticky top-20 shadow-xl">
+                    <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-3">
+                        <h3 class="text-sm font-bold text-purple-300 flex items-center gap-2">
+                            <i class="fa-solid fa-shield-halved text-purple-400"></i> Admin Panel: Add Content
+                        </h3>
+                        <button onclick="hideAdminPanel()" class="text-gray-500 hover:text-white text-xs">
+                            <i class="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+
+                    <form id="addContentForm" onsubmit="submitContent(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Course ID</label>
+                            <input type="text" id="inputCourseId" readonly class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-gray-400 cursor-not-allowed">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Topic / Chapter Title</label>
+                            <input type="text" id="contentTitle" placeholder="e.g. Chapter 1 - Physics Laws" required class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-600 transition">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Resource Type</label>
+                            <select id="contentType" class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-600 transition">
+                                <option value="Video">Video Lecture (YouTube/Drive)</option>
+                                <option value="PDF">PDF Notes / Class Handout</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-bold text-gray-400 mb-1 uppercase tracking-wider">Resource URL</label>
+                            <input type="url" id="contentUrl" placeholder="https://..." required class="w-full bg-gray-950 border border-gray-800 rounded-xl px-3.5 py-2.5 text-xs text-white focus:outline-none focus:border-purple-600 transition">
+                        </div>
+                        <div class="flex items-center gap-2 pt-1">
+                            <input type="checkbox" id="isFreePreview" class="rounded bg-gray-950 border-gray-800 text-purple-600 focus:ring-0">
+                            <label for="isFreePreview" class="text-xs text-gray-300">Allow Free Demo Preview</label>
+                        </div>
+                        <button type="submit" id="submitBtn" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition text-xs shadow-lg flex justify-center items-center gap-2">
+                            <i class="fa-solid fa-cloud-arrow-up"></i> Upload to Classroom
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbzmJCm8lFBGQbMGMyQuJ1hcOoLfjkP5Kc_wuKBGCuy3DRzYg7jdtyLX9H5iZflfgvb_Pg/exec";
+        const ADMIN_PIN = "1234"; // Default Admin PIN (Aap ise apne hisab se badal sakte hain)
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentCourseId = urlParams.get('courseId') || 'CRS-101';
+        
+        let allContentData = [];
+        let activeFilter = 'All';
+        let isAdminLoggedIn = false;
+
+        window.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("inputCourseId").value = currentCourseId;
+            fetchCourseMetaData();
+            loadCourseContent();
+
+            // Admin Login state restore check
+            if(localStorage.getItem("cw_admin_active") === "true") {
+                enableAdminMode();
+            }
+        });
+
+        // Toggle Admin Verification
+        function toggleAdminAccess() {
+            if (isAdminLoggedIn) {
+                hideAdminPanel();
+            } else {
+                Swal.fire({
+                    title: 'Admin Password Enter Karein',
+                    input: 'password',
+                    inputPlaceholder: 'Enter Admin Secret PIN',
+                    showCancelButton: true,
+                    confirmButtonColor: '#7e22ce',
+                    confirmButtonText: 'Verify'
+                }).then((result) => {
+                    if (result.value === ADMIN_PIN) {
+                        localStorage.setItem("cw_admin_active", "true");
+                        enableAdminMode();
+                        Swal.fire({ icon: 'success', title: 'Admin Access Verified', timer: 1500, showConfirmButton: false });
+                    } else if(result.isConfirmed) {
+                        Swal.fire({ icon: 'error', title: 'Incorrect PIN', text: 'Galat PIN enter kiya hai.' });
+                    }
+                });
+            }
+        }
+
+        function enableAdminMode() {
+            isAdminLoggedIn = true;
+            document.getElementById("adminPanel").classList.remove("hidden");
+            document.getElementById("contentListWrapper").className = "lg:col-span-2 transition-all duration-300";
+            document.getElementById("adminToggleBtn").innerHTML = `<i class="fa-solid fa-user-slash"></i> Exit Admin`;
+            document.getElementById("adminToggleBtn").className = "bg-red-900/60 hover:bg-red-800 text-red-300 text-xs px-3 py-1.5 rounded-xl border border-red-700 flex items-center gap-1.5 transition font-semibold";
+        }
+
+        function hideAdminPanel() {
+            isAdminLoggedIn = false;
+            localStorage.removeItem("cw_admin_active");
+            document.getElementById("adminPanel").classList.add("hidden");
+            document.getElementById("contentListWrapper").className = "lg:col-span-3 transition-all duration-300";
+            document.getElementById("adminToggleBtn").innerHTML = `<i class="fa-solid fa-user-gear"></i> Admin Mode`;
+            document.getElementById("adminToggleBtn").className = "bg-purple-950 hover:bg-purple-900 text-purple-300 text-xs px-3 py-1.5 rounded-xl border border-purple-800 flex items-center gap-1.5 transition font-semibold";
+        }
+
+        // Fetch Course Metadata Title
+        async function fetchCourseMetaData() {
+            try {
+                const response = await fetch(`${API_URL}?action=getCourses`);
+                const courses = await response.json();
+                const matchedCourse = courses.find(c => String(c.CourseID) === String(currentCourseId));
+
+                if (matchedCourse) {
+                    document.getElementById("topCourseTitle").innerText = matchedCourse.Title;
+                    document.getElementById("bannerTitle").innerText = matchedCourse.Title;
+                    document.getElementById("bannerDesc").innerText = matchedCourse.Description || "Complete structured batch lectures & preparation material.";
+                    document.getElementById("topCourseCategory").innerText = matchedCourse.Category || "PW BATCH";
+                } else {
+                    document.getElementById("topCourseTitle").innerText = `Batch ID: ${currentCourseId}`;
+                    document.getElementById("bannerTitle").innerText = `Batch Classroom (${currentCourseId})`;
+                }
+            } catch (e) { console.log(e); }
+        }
+
+        // Fetch Lectures & Content List from Google Sheets
+        async function loadCourseContent() {
+            const listContainer = document.getElementById("contentList");
+            listContainer.innerHTML = `
+                <div class="bg-gray-900 p-8 rounded-2xl border border-gray-800 text-center text-gray-400">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl text-purple-600 mb-3"></i>
+                    <p class="text-sm font-semibold">Lectures refresh ho rahe hain...</p>
+                </div>`;
+
+            try {
+                const response = await fetch(`${API_URL}?action=getContent&courseId=${currentCourseId}`);
+                allContentData = await response.json();
+
+                if (!Array.isArray(allContentData)) allContentData = [];
+
+                document.getElementById("contentCount").innerText = `${allContentData.length} Items`;
+                renderContentList();
+
+            } catch (err) {
+                listContainer.innerHTML = `
+                    <div class="bg-gray-900 p-8 rounded-2xl border border-red-900/50 text-center text-red-400">
+                        <i class="fa-solid fa-triangle-exclamation text-3xl mb-2"></i>
+                        <p class="text-xs font-bold">Content load karne me problem hui.</p>
+                    </div>`;
+            }
+        }
+
+        // Render List based on Filter Tabs
+        function renderContentList() {
+            const listContainer = document.getElementById("contentList");
+            
+            let filtered = allContentData.filter(item => {
+                if (activeFilter === 'All') return true;
+                return item.Type === activeFilter;
+            });
+
+            if (filtered.length === 0) {
+                listContainer.innerHTML = `
+                    <div class="bg-gray-900 p-8 rounded-2xl border border-gray-800 text-center text-gray-500">
+                        <i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-700"></i>
+                        <p class="text-sm font-bold text-gray-300">Koi content available nahi hai!</p>
+                        <p class="text-xs mt-1">Abhi is course me koi material publish nahi kiya gaya hai.</p>
+                    </div>`;
+                return;
+            }
+
+            listContainer.innerHTML = filtered.map((item, idx) => {
+                const isVideo = item.Type === "Video";
+                return `
+                    <div class="bg-gray-900 p-4 rounded-2xl border border-gray-800/80 hover:border-purple-600/50 transition flex items-center justify-between gap-4 shadow-md">
+                        <div class="flex items-center gap-3.5">
+                            <div class="${isVideo ? 'bg-red-950/60 text-red-500 border-red-800/50' : 'bg-amber-950/60 text-amber-500 border-amber-800/50'} w-11 h-11 rounded-xl border flex items-center justify-center text-lg flex-shrink-0">
+                                <i class="fa-solid ${isVideo ? 'fa-play' : 'fa-file-pdf'}"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-sm text-gray-100 line-clamp-1">${idx + 1}. ${item.Title}</h4>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[10px] font-semibold text-gray-400 bg-gray-950 px-2 py-0.5 rounded border border-gray-800">${item.Type}</span>
+                                    ${item.IsFreePreview ? '<span class="bg-green-950 text-green-400 text-[10px] font-bold px-2 py-0.5 rounded border border-green-800">FREE DEMO</span>' : ''}
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="openResource('${item.Type}', '${item.URL}', '${item.Title}')" class="bg-purple-700 hover:bg-purple-800 text-white text-xs px-4 py-2.5 rounded-xl font-bold transition flex items-center gap-1.5 flex-shrink-0 shadow">
+                            <i class="fa-solid ${isVideo ? 'fa-circle-play' : 'fa-eye'}"></i> ${isVideo ? 'Watch' : 'View PDF'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Switch Category Tabs (All / Video / PDF)
+        function switchFilter(type) {
+            activeFilter = type;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn bg-gray-900 text-gray-400 border border-gray-800 hover:bg-gray-800 px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap";
+            });
+
+            if (type === 'All') document.getElementById('tabAll').className = "tab-btn bg-purple-700 text-white px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap";
+            if (type === 'Video') document.getElementById('tabVideo').className = "tab-btn bg-purple-700 text-white px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap";
+            if (type === 'PDF') document.getElementById('tabPDF').className = "tab-btn bg-purple-700 text-white px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap";
+
+            renderContentList();
+        }
+
+        // Video Player & PDF Viewer Modal Popup
+        function openResource(type, url, title) {
+            if (!url) {
+                Swal.fire({ icon: 'warning', title: 'Invalid URL', text: 'Is resource ki link available nahi hai.' });
+                return;
+            }
+
+            let embedHtml = "";
+            if (type === "Video") {
+                let embedUrl = url;
+                if (url.includes("watch?v=")) {
+                    embedUrl = url.replace("watch?v=", "embed/");
+                } else if (url.includes("youtu.be/")) {
+                    embedUrl = url.replace("youtu.be/", "www.youtube.com/embed/");
+                }
+
+                embedHtml = `
+                    <div class="aspect-video w-full rounded-xl overflow-hidden mt-3 border border-gray-800">
+                        <iframe class="w-full h-full" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>`;
+            } else {
+                embedHtml = `
+                    <div class="h-[480px] w-full rounded-xl overflow-hidden mt-3 border border-gray-800">
+                        <iframe class="w-full h-full" src="${url}" frameborder="0"></iframe>
+                    </div>`;
+            }
+
+            Swal.fire({
+                title: `<span class="text-base font-bold text-white">${title}</span>`,
+                html: embedHtml,
+                showCloseButton: true,
+                showConfirmButton: false,
+                width: '850px',
+                background: '#0f172a',
+                color: '#fff'
+            });
+        }
+
+        // Upload Content to Google Sheets
+        async function submitContent(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById("submitBtn");
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving...`;
+            submitBtn.disabled = true;
+
+            const payload = {
+                action: "addContent",
+                payload: {
+                    courseId: document.getElementById("inputCourseId").value,
+                    title: document.getElementById("contentTitle").value,
+                    type: document.getElementById("contentType").value,
+                    url: document.getElementById("contentUrl").value,
+                    isFreePreview: document.getElementById("isFreePreview").checked
+                }
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+
+                const res = await response.json();
+
+                if (res.status === "success") {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Uploaded Successfully!',
+                        text: 'Content database me add ho gaya hai.',
+                        background: '#0f172a',
+                        color: '#fff',
+                        confirmButtonColor: '#7e22ce'
+                    });
+
+                    document.getElementById("addContentForm").reset();
+                    document.getElementById("inputCourseId").value = currentCourseId;
+                    loadCourseContent();
+                } else {
+                    throw new Error(res.message || "Upload Error");
+                }
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Upload Failed', text: err.message, background: '#0f172a', color: '#fff' });
+            } finally {
+                submitBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Upload to Classroom`;
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
