@@ -398,7 +398,7 @@
 
                 renderBatches();
             } catch (err) {
-                container.innerHTML = `<p class="text-center text-red-500 py-10 text-xs">Batches load nahi ho sake. Please refresh.</p>`;
+                container.innerHTML = `<p class="text-center text-red-500 py-10 text-xs">Batches could not load. Please refresh.</p>`;
             }
         }
 
@@ -428,7 +428,7 @@
                     <div class="bg-white rounded-2xl p-8 text-center border border-gray-100 shadow-sm my-4">
                         <i class="fa-solid fa-graduation-cap text-4xl text-gray-300 mb-2"></i>
                         <p class="text-gray-600 font-bold text-sm">Koi Batch Nahi Mila!</p>
-                        <p class="text-gray-400 text-xs mt-1">${currentViewMode === 'my' ? 'No Batch Allocated!You haven't unlocked a batch yet, or your verification is still under process..' : 'You have purchased all available batches.'}</p>
+                        <p class="text-gray-400 text-xs mt-1">${currentViewMode === 'my' ? 'No Batch Allocated!You have not unlocked a batch yet or your verification is still under process.' : 'You have purchased all available batches.'}</p>
                     </div>`;
                 return;
             }
