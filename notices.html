@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Announcements & Notice Board</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen pb-12">
+
+    <!-- TOP APP HEADER -->
+    <div class="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-900 text-white px-4 pt-5 pb-8 shadow-lg">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="dashboard.html" class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition">
+                    <i class="fa-solid fa-arrow-left text-base"></i>
+                </a>
+                <div>
+                    <h1 class="text-lg font-black tracking-wide">Notice Board</h1>
+                    <p class="text-xs text-purple-200">Latest Updates & Announcements</p>
+                </div>
+            </div>
+            <div class="w-9 h-9 rounded-full bg-purple-600/50 border border-purple-400/40 flex items-center justify-center text-yellow-300">
+                <i class="fa-solid fa-bullhorn"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="max-w-md mx-auto px-4 -mt-4 space-y-4">
+
+        <!-- SEARCH BAR -->
+        <div class="bg-white rounded-2xl p-2.5 shadow-sm border border-gray-100 flex items-center gap-2">
+            <i class="fa-solid fa-magnifying-glass text-gray-400 ml-2"></i>
+            <input type="text" id="noticeSearch" onkeyup="filterNotices()" placeholder="Search announcement..." class="w-full text-xs bg-transparent focus:outline-none text-gray-800">
+        </div>
+
+        <!-- CATEGORY CHIPS -->
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar text-xs font-semibold">
+            <button onclick="filterCategory('All')" class="cat-btn active bg-purple-700 text-white px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
+                All Updates
+            </button>
+            <button onclick="filterCategory('Exam')" class="cat-btn bg-white border border-gray-200 text-gray-600 px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
+                Exams & Tests
+            </button>
+            <button onclick="filterCategory('Notes')" class="cat-btn bg-white border border-gray-200 text-gray-600 px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
+                Study Materials
+            </button>
+            <button onclick="filterCategory('Important')" class="cat-btn bg-white border border-gray-200 text-gray-600 px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
+                Important
+            </button>
+        </div>
+
+        <!-- NOTICE LIST CONTAINER -->
+        <div id="noticeContainer" class="space-y-3">
+            <!-- Dynamic Notices Rendered Here -->
+        </div>
+
+    </div>
+
+    <script>
+        // Sample Announcements Data (Inhe Google Sheet API se bhi fetch kar sakte hain)
+        const notices = [
+            {
+                id: 1,
+                title: "Monthly Test Series Schedule Announced",
+                category: "Exam",
+                tagColor: "bg-purple-100 text-purple-700 border-purple-200",
+                borderColor: "border-purple-600",
+                date: "05 Sep 2026",
+                description: "Upcoming online test series for Class 11th & 12th will commence from next Monday. Syllabus details are uploaded in the Tests section.",
+                isPinned: true
+            },
+            {
+                id: 2,
+                title: "New Study Material Uploaded - Class 12 Zoology",
+                category: "Notes",
+                tagColor: "bg-amber-100 text-amber-700 border-amber-200",
+                borderColor: "border-amber-500",
+                date: "04 Sep 2026",
+                description: "Class 12th Zoology Chapter-4 handwritten PDF notes and important short questions have been published in the Study Materials section.",
+                isPinned: false
+            },
+            {
+                id: 3,
+                title: "Special Sunday Live Doubt Session",
+                category: "Important",
+                tagColor: "bg-rose-100 text-rose-700 border-rose-200",
+                borderColor: "border-rose-500",
+                date: "02 Sep 2026",
+                description: "A live Q&A session will be conducted this Sunday at 11:00 AM. Clear all your doubts regarding recent batches and concepts.",
+                isPinned: false
+            },
+            {
+                id: 4,
+                title: "Holiday Notice: Institutional Off",
+                category: "Important",
+                tagColor: "bg-blue-100 text-blue-700 border-blue-200",
+                borderColor: "border-blue-500",
+                date: "28 Aug 2026",
+                description: "Please note that online support desks will operate with modified hours on the upcoming national holiday.",
+                isPinned: false
+            }
+        ];
+
+        let currentCat = 'All';
+
+        function renderNotices() {
+            const container = document.getElementById("noticeContainer");
+            const searchTxt = document.getElementById("noticeSearch").value.toLowerCase();
+
+            const filtered = notices.filter(n => {
+                const matchesSearch = n.title.toLowerCase().includes(searchTxt) || n.description.toLowerCase().includes(searchTxt);
+                const matchesCat = currentCat === 'All' || n.category === currentCat;
+                return matchesSearch && matchesCat;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-bullhorn text-4xl text-gray-300 mb-2"></i>
+                        <p class="text-gray-600 font-bold text-sm">No Announcement Found!</p>
+                        <p class="text-gray-400 text-xs mt-1">Check back later for new updates.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(notice => `
+                <div class="bg-white rounded-2xl p-4 shadow-sm border-l-4 ${notice.borderColor} border-t border-r border-b border-gray-100 space-y-2">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-md border ${notice.tagColor}">
+                            ${notice.category.toUpperCase()}
+                        </span>
+                        <span class="text-[10px] font-medium text-gray-400">
+                            <i class="fa-regular fa-clock mr-1"></i>${notice.date}
+                        </span>
+                    </div>
+
+                    <h3 class="font-bold text-sm text-gray-800 leading-snug flex items-center justify-between">
+                        ${notice.title}
+                        ${notice.isPinned ? '<i class="fa-solid fa-thumbtack text-purple-600 text-xs transform rotate-45" title="Pinned Notice"></i>' : ''}
+                    </h3>
+
+                    <p class="text-xs text-gray-600 leading-relaxed">
+                        ${notice.description}
+                    </p>
+                </div>
+            `).join('');
+        }
+
+        function filterCategory(cat) {
+            currentCat = cat;
+            document.querySelectorAll('.cat-btn').forEach(btn => {
+                if (btn.innerText.toLowerCase().includes(cat.toLowerCase()) || (cat === 'All' && btn.innerText.includes('All'))) {
+                    btn.className = "cat-btn active bg-purple-700 text-white px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap";
+                } else {
+                    btn.className = "cat-btn bg-white border border-gray-200 text-gray-600 px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap";
+                }
+            });
+            renderNotices();
+        }
+
+        function filterNotices() {
+            renderNotices();
+        }
+
+        // Initial Load
+        renderNotices();
+    </script>
+</body>
+</html>
