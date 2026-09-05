@@ -609,7 +609,7 @@
                     Swal.fire({
                         icon: 'success',
                         title: 'Request Submitted!',
-                        text: 'Aapka UTR submit ho chuka hai. Admin dwara verify hone par batch automatic unlock ho jayega.',
+                        text: 'Your UTR has been submitted. The batch will be automatically unlocked once verified by the admin.',
                         confirmButtonColor: '#6d28d9'
                     });
 
@@ -619,13 +619,13 @@
                     Swal.fire({
                         icon: 'error',
                         title: 'Submission Failed',
-                        text: resData.message || 'Ye UTR pehle se istemaal ho chuka hai!',
+                        text: resData.message || 'This UTR has already been claimed!',
                         confirmButtonColor: '#ef4444'
                     });
                 }
 
             } catch (error) {
-                Swal.fire('Error', 'Server error. Kripya dobara koshish karein.', 'error');
+                Swal.fire('Error', 'Server error. Please try again.', 'error');
             }
         }
 
