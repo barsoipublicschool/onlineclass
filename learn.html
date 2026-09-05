@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Classroom - PW Style</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-950 text-white font-sans min-h-screen pb-16">
+
+    <header class="bg-gray-900 border-b border-gray-800 px-4 py-3 sticky top-0 z-40 shadow-lg">
+        <div class="max-w-5xl mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <a href="student.html" class="w-9 h-9 bg-gray-800 hover:bg-purple-900/50 text-gray-300 hover:text-white rounded-xl flex items-center justify-center transition border border-gray-700">
+                    <i class="fa-solid fa-arrow-left"></i>
+                </a>
+                <div>
+                    <h1 id="topCourseTitle" class="text-sm md:text-base font-bold text-white line-clamp-1">Loading Batch...</h1>
+                    <p id="topCourseCategory" class="text-[10px] text-purple-400 font-semibold">CLASSROOM</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <span id="courseBadge" class="bg-purple-950 text-purple-300 text-xs px-3 py-1 rounded-full border border-purple-800 font-bold">
+                    ID: --
+                </span>
+                <button onclick="loadLectures()" class="bg-gray-800 hover:bg-gray-700 text-xs px-3 py-1.5 rounded-xl border border-gray-700 flex items-center gap-1.5 transition text-gray-300">
+                    <i class="fa-solid fa-rotate-right text-purple-400"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="max-w-5xl mx-auto px-4 mt-4">
+
+        <div class="bg-gradient-to-r from-purple-900 via-indigo-900 to-gray-900 rounded-2xl p-5 border border-purple-800/50 shadow-2xl mb-6 relative overflow-hidden">
+            <div class="relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div>
+                    <span class="bg-yellow-400 text-black text-[10px] font-black px-2.5 py-0.5 rounded shadow uppercase">MY ENROLLED BATCH</span>
+                    <h2 id="bannerTitle" class="text-xl md:text-2xl font-black mt-2 text-white">Loading Classroom Details...</h2>
+                    <p id="bannerDesc" class="text-xs text-gray-300 mt-1 max-w-2xl line-clamp-2">Neeche sabhi lectures aur study notes listed hain.</p>
+                </div>
+                <div class="flex items-center gap-2 bg-gray-900/80 px-4 py-2 rounded-xl border border-gray-700 text-xs text-gray-300">
+                    <i class="fa-solid fa-layer-group text-purple-400"></i>
+                    <span id="contentCount">0 Items</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar pb-3 mb-4 border-b border-gray-800 text-xs font-bold">
+            <button id="tabAll" onclick="switchFilter('All')" class="tab-btn bg-purple-700 text-white px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-border-all"></i> All Contents
+            </button>
+            <button id="tabVideo" onclick="switchFilter('Video')" class="tab-btn bg-gray-900 text-gray-400 border border-gray-800 hover:bg-gray-800 px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-circle-play text-red-500"></i> Video Lectures
+            </button>
+            <button id="tabPDF" onclick="switchFilter('PDF')" class="tab-btn bg-gray-900 text-gray-400 border border-gray-800 hover:bg-gray-800 px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap">
+                <i class="fa-solid fa-file-pdf text-amber-500"></i> PDF Notes & DPP
+            </button>
+        </div>
+
+        <div class="space-y-4">
+            <div id="lectureList" class="space-y-3">
+                <div class="bg-gray-900 p-8 rounded-2xl border border-gray-800 text-center text-gray-400">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl text-purple-600 mb-3"></i>
+                    <p class="text-sm font-semibold">Google Sheet se lectures fetch ho rahe hain...</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbzmJCm8lFBGQbMGMyQuJ1hcOoLfjkP5Kc_wuKBGCuy3DRzYg7jdtyLX9H5iZflfgvb_Pg/exec";
+        
+        // URL Parameter se Course ID fetch karein (e.g. learn.html?courseId=CRS-101)
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentCourseId = urlParams.get('courseId') || 'CRS-101';
+
+        let allLecturesData = [];
+        let activeFilter = 'All';
+
+        window.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("courseBadge").innerText = `ID: ${currentCourseId}`;
+            fetchCourseMetaData();
+            loadLectures();
+        });
+
+        // 1. Fetch Course Metadata Title & Category
+        async function fetchCourseMetaData() {
+            try {
+                const response = await fetch(`${API_URL}?action=getCourses`);
+                const courses = await response.json();
+                const matchedCourse = courses.find(c => String(c.CourseID) === String(currentCourseId));
+
+                if (matchedCourse) {
+                    document.getElementById("topCourseTitle").innerText = matchedCourse.Title;
+                    document.getElementById("bannerTitle").innerText = matchedCourse.Title;
+                    document.getElementById("bannerDesc").innerText = matchedCourse.Description || "Complete structured batch lectures & preparation material.";
+                    document.getElementById("topCourseCategory").innerText = matchedCourse.Category || "PW CLASSROOM";
+                } else {
+                    document.getElementById("topCourseTitle").innerText = `Batch ID: ${currentCourseId}`;
+                    document.getElementById("bannerTitle").innerText = `Batch Classroom (${currentCourseId})`;
+                }
+            } catch (e) {
+                console.log("Metadata error:", e);
+            }
+        }
+
+        // 2. Fetch Lectures List from Google Sheets
+        async function loadLectures() {
+            const container = document.getElementById("lectureList");
+            container.innerHTML = `
+                <div class="bg-gray-900 p-8 rounded-2xl border border-gray-800 text-center text-gray-400">
+                    <i class="fa-solid fa-circle-notch fa-spin text-3xl text-purple-600 mb-3"></i>
+                    <p class="text-sm font-semibold">Refreshing lectures list...</p>
+                </div>`;
+
+            try {
+                const response = await fetch(`${API_URL}?action=getContent&courseId=${currentCourseId}`);
+                const data = await response.json();
+
+                if (!Array.isArray(data)) {
+                    allLecturesData = [];
+                } else {
+                    allLecturesData = data;
+                }
+
+                document.getElementById("contentCount").innerText = `${allLecturesData.length} Resources`;
+                renderLectures();
+
+            } catch (err) {
+                container.innerHTML = `
+                    <div class="bg-gray-900 p-8 rounded-2xl border border-red-900/50 text-center text-red-400">
+                        <i class="fa-solid fa-triangle-exclamation text-3xl mb-2"></i>
+                        <p class="text-xs font-bold">Lectures fetch karne me samasya aayi.</p>
+                    </div>`;
+            }
+        }
+
+        // 3. Render Lectures Filtered by Tabs
+        function renderLectures() {
+            const container = document.getElementById("lectureList");
+
+            let filtered = allLecturesData.filter(item => {
+                const itemType = (item.Type || "Video").toLowerCase();
+                if (activeFilter === 'All') return true;
+                return itemType === activeFilter.toLowerCase();
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-gray-900 p-8 rounded-2xl border border-gray-800 text-center text-gray-500">
+                        <i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-700"></i>
+                        <p class="text-sm font-bold text-gray-300">Is category me koi lecture nahi mila!</p>
+                        <p class="text-xs mt-1">Sabhhi materials dekhne ke liye "All Contents" tab par click karein.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map((item, index) => {
+                const rawType = item.Type || "Video";
+                const isVideo = rawType.toLowerCase() === "video";
+
+                return `
+                    <div class="bg-gray-900 p-4 rounded-2xl border border-gray-800/80 hover:border-purple-600/50 transition flex items-center justify-between gap-4 shadow-md">
+                        <div class="flex items-center gap-3.5">
+                            <div class="${isVideo ? 'bg-red-950/60 text-red-500 border-red-800/50' : 'bg-amber-950/60 text-amber-500 border-amber-800/50'} w-11 h-11 rounded-xl border flex items-center justify-center text-lg flex-shrink-0">
+                                <i class="fa-solid ${isVideo ? 'fa-play' : 'fa-file-pdf'}"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-sm text-gray-100 line-clamp-1">${index + 1}. ${item.Title || 'Untitled Lecture'}</h4>
+                                <div class="flex items-center gap-2 mt-1">
+                                    <span class="text-[10px] font-semibold text-gray-400 bg-gray-950 px-2 py-0.5 rounded border border-gray-800">${rawType}</span>
+                                    ${item.IsFreePreview ? '<span class="bg-green-950 text-green-400 text-[10px] font-bold px-2 py-0.5 rounded border border-green-800">FREE DEMO</span>' : ''}
+                                </div>
+                            </div>
+                        </div>
+
+                        <button onclick="playMedia('${rawType}', '${item.URL}', '${item.Title || 'Resource'}')" class="bg-purple-700 hover:bg-purple-800 text-white text-xs px-4 py-2.5 rounded-xl font-bold transition flex items-center gap-1.5 flex-shrink-0 shadow">
+                            <i class="fa-solid ${isVideo ? 'fa-circle-play' : 'fa-book-open'}"></i> ${isVideo ? 'Watch' : 'Read PDF'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // 4. Switch Category Filter Tabs
+        function switchFilter(type) {
+            activeFilter = type;
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn bg-gray-900 text-gray-400 border border-gray-800 hover:bg-gray-800 px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap";
+            });
+
+            if (type === 'All') document.getElementById('tabAll').className = "tab-btn bg-purple-700 text-white px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap";
+            if (type === 'Video') document.getElementById('tabVideo').className = "tab-btn bg-purple-700 text-white px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap";
+            if (type === 'PDF') document.getElementById('tabPDF').className = "tab-btn bg-purple-700 text-white px-4 py-2 rounded-xl transition flex items-center gap-2 whitespace-nowrap";
+
+            renderLectures();
+        }
+
+        // 5. Play Video or Open PDF in SweetAlert Modal
+        function playMedia(type, url, title) {
+            if (!url) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Resource Unavailable',
+                    text: 'Is lecture ka URL Google Sheets me missing hai.',
+                    background: '#0f172a',
+                    color: '#fff'
+                });
+                return;
+            }
+
+            let embedHtml = "";
+            const isVideo = type.toLowerCase() === "video";
+
+            if (isVideo) {
+                let embedUrl = url;
+                if (url.includes("watch?v=")) {
+                    embedUrl = url.replace("watch?v=", "embed/");
+                } else if (url.includes("youtu.be/")) {
+                    embedUrl = url.replace("youtu.be/", "www.youtube.com/embed/");
+                }
+
+                embedHtml = `
+                    <div class="aspect-video w-full rounded-xl overflow-hidden mt-3 border border-gray-800 shadow-2xl">
+                        <iframe class="w-full h-full" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    </div>`;
+            } else {
+                embedHtml = `
+                    <div class="h-[480px] w-full rounded-xl overflow-hidden mt-3 border border-gray-800 shadow-2xl">
+                        <iframe class="w-full h-full" src="${url}" frameborder="0"></iframe>
+                    </div>`;
+            }
+
+            Swal.fire({
+                title: `<span class="text-base font-bold text-white">${title}</span>`,
+                html: embedHtml,
+                showCloseButton: true,
+                showConfirmButton: false,
+                width: '850px',
+                background: '#0f172a',
+                color: '#fff'
+            });
+        }
+    </script>
+</body>
+</html>
