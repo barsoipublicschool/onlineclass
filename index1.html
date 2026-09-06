@@ -321,57 +321,162 @@
                             resolve(false);
                             return;
                         }
+// Track Login Activity Function - MANDATORY LOCATION PERMISSION WITH MODEL CODE
+async function trackStudentLogin(studentEmail) {
+    return new Promise((resolve) => {
+        const ua = navigator.userAgent;
 
-                        Swal.fire({
-                            title: 'Verifying Location...',
-                            text: 'Kripya browser prompt par "Allow" par click karein.',
-                            allowOutsideClick: false,
-                            allowEscapeKey: false,
-                            didOpen: () => { Swal.showLoading(); }
-                        });
+        // 1. Device Name & Model Code Detection
+        let deviceName = "Desktop/Laptop";
+        if (/iPhone/i.test(ua)) {
+            deviceName = "iPhone (iOS)";
+        } else if (/iPad/i.test(ua)) {
+            deviceName = "iPad (iOS)";
+        } else if (/Android/i.test(ua)) {
+            // Android UserAgent se exact Model Code extract karne ka regex
+            const androidMatch = ua.match(/Android\s+[\d.]+;(?:\s*[^;]+;)?\s*([^;)]+)\s*\)/i);
+            if (androidMatch && androidMatch[1]) {
+                // "Build/..." aur extra single characters (jaise 'K') ko clean karna
+                let modelCode = androidMatch[1].replace(/Build\/.*/i, '').trim();
+                
+                // Agar 'K' alag se aa raha ho toh use saaf karke clean model code nikalna
+                if (modelCode.startsWith("K ")) {
+                    modelCode = modelCode.replace(/^K\s+/i, '').trim();
+                } else if (modelCode === "K") {
+                    modelCode = "";
+                }
 
-                        navigator.geolocation.getCurrentPosition(
-                            async (position) => {
-                                const lat = position.coords.latitude.toFixed(5);
-                                const lon = position.coords.longitude.toFixed(5);
-                                const latLonStr = `Lat: ${lat}, Lon: ${lon}`;
-                                
-                                const address = await getAddressFromCoords(lat, lon);
-                                const locationStr = address ? `${address} (GPS)` : `${lat}, ${lon}`;
+                if (modelCode && modelCode.length > 1) {
+                    deviceName = modelCode; // Ye direct model code save karega (e.g., 23053RN02I)
+                } else {
+                    deviceName = "Android Mobile";
+                }
+            } else {
+                deviceName = "Android Mobile";
+            }
+        }
 
-                                await sendPayload(latLonStr, locationStr);
+        // 2. Exact Browser Detection Logic
+        let detectedBrowser = "Other Browser";
+        if (ua.includes("OPR") || ua.includes("Opera")) {
+            detectedBrowser = "Opera";
+        } else if (ua.includes("Edg")) {
+            detectedBrowser = "Microsoft Edge";
+        } else if (ua.includes("Chrome")) {
+            detectedBrowser = "Chrome";
+        } else if (ua.includes("Safari")) {
+            detectedBrowser = "Safari";
+        } else if (ua.includes("Firefox")) {
+            detectedBrowser = "Firefox";
+        }
 
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Location Verified!',
-                                    text: `Welcome to Portal`,
-                                    timer: 1500,
-                                    showConfirmButton: false
-                                });
-                                resolve(true);
-                            },
-                            (error) => {
-                                Swal.fire({
-                                    icon: 'error',
-                                    title: 'Location Denied!',
-                                    text: 'Location Access compulsory hai. Portal me aage badhne ke liye Location allow karein.',
-                                    confirmButtonColor: '#7e22ce'
-                                });
-                                resolve(false);
-                            },
-                            { timeout: 10000, enableHighAccuracy: true }
-                        );
-                    } else {
-                        Swal.fire({
-                            icon: 'info',
-                            title: 'Login Cancelled',
-                            text: 'Location access ke bina aap login nahi kar sakte.'
-                        });
-                        resolve(false);
-                    }
-                });
+        const getAddressFromCoords = async (lat, lon) => {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                const data = await res.json();
+                if (data && data.address) {
+                    const city = data.address.city || data.address.town || data.address.village || data.address.county || "";
+                    const state = data.address.state || "";
+                    const country = data.address.country || "";
+                    return [city, state, country].filter(Boolean).join(", ");
+                }
+            } catch (e) {
+                return null;
+            }
+        };
+
+        async function sendPayload(latLonStr, locationStr) {
+            const payload = {
+                action: "trackLogin",
+                payload: {
+                    studentEmail: studentEmail,
+                    device: deviceName,
+                    ipAddress: latLonStr,
+                    location: locationStr,
+                    browser: detectedBrowser,
+                    os: navigator.platform
+                }
+            };
+
+            await fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
             });
         }
+
+        // Mandatory SweetAlert Permission Prompt
+        Swal.fire({
+            title: 'Location Permission Required',
+            text: 'Portal me login ke liye Location access dena compulsory (MANDATORY) hai.',
+            icon: 'warning',
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            showCancelButton: true,
+            cancelButtonText: 'Cancel Login',
+            confirmButtonColor: '#7e22ce',
+            confirmButtonText: 'Allow & Proceed'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                if (!("geolocation" in navigator)) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'GPS Not Supported',
+                        text: 'Aapke browser me Geolocation feature supports nahi hai.'
+                    });
+                    resolve(false);
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Verifying Location...',
+                    text: 'Kripya browser prompt par "Allow" par click karein.',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => { Swal.showLoading(); }
+                });
+
+                navigator.geolocation.getCurrentPosition(
+                    async (position) => {
+                        const lat = position.coords.latitude.toFixed(5);
+                        const lon = position.coords.longitude.toFixed(5);
+                        const latLonStr = `Lat: ${lat}, Lon: ${lon}`;
+                        
+                        const address = await getAddressFromCoords(lat, lon);
+                        const locationStr = address ? `${address} (GPS)` : `${lat}, ${lon}`;
+
+                        await sendPayload(latLonStr, locationStr);
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Location Verified!',
+                            text: `Welcome to Portal`,
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                        resolve(true);
+                    },
+                    (error) => {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Location Denied!',
+                            text: 'Location Access compulsory hai. Portal me aage badhne ke liye Location allow karein.',
+                            confirmButtonColor: '#7e22ce'
+                        });
+                        resolve(false);
+                    },
+                    { timeout: 10000, enableHighAccuracy: true }
+                );
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Login Cancelled',
+                    text: 'Location access ke bina aap login nahi kar sakte.'
+                });
+                resolve(false);
+            }
+        });
+    });
+}
 
         // Toggle Sidebar Drawer
         function toggleSidebar() {
