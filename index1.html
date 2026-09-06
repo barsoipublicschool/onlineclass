@@ -230,36 +230,50 @@
             }
         });
 
-        // Track Login Activity Function - MANDATORY LOCATION PERMISSION WITH MODEL CODE
+                // Track Login Activity Function - MANDATORY LOCATION PERMISSION WITH MODEL CODE
         async function trackStudentLogin(studentEmail) {
-            return new Promise((resolve) => {
+            return new Promise(async (resolve) => {
                 const ua = navigator.userAgent;
 
-                // 1. Device Name & Model Code Detection
+                // 1. Precise Model Code Detection (with UA Client Hints Fallback)
                 let deviceName = "Desktop/Laptop";
+
                 if (/iPhone/i.test(ua)) {
                     deviceName = "iPhone (iOS)";
                 } else if (/iPad/i.test(ua)) {
                     deviceName = "iPad (iOS)";
                 } else if (/Android/i.test(ua)) {
-                    const androidMatch = ua.match(/Android\s+[\d.]+;(?:\s*[^;]+;)?\s*([^;)]+)\s*\)/i);
-                    if (androidMatch && androidMatch[1]) {
-                        let modelCode = androidMatch[1].replace(/Build\/.*/i, '').trim();
-                        
-                        if (modelCode.startsWith("K ")) {
-                            modelCode = modelCode.replace(/^K\s+/i, '').trim();
-                        } else if (modelCode === "K") {
-                            modelCode = "";
-                        }
+                    let detectedModel = "";
 
-                        if (modelCode && modelCode.length > 1) {
-                            deviceName = modelCode;
-                        } else {
-                            deviceName = "Android Mobile";
+                    // Try Modern High-Entropy User Agent API (Chrome Android)
+                    if (navigator.userAgentData && navigator.userAgentData.getHighEntropyValues) {
+                        try {
+                            const uaData = await navigator.userAgentData.getHighEntropyValues(["model"]);
+                            if (uaData && uaData.model) {
+                                detectedModel = uaData.model;
+                            }
+                        } catch (e) {
+                            // Fallback if API fails
                         }
-                    } else {
-                        deviceName = "Android Mobile";
                     }
+
+                    // Fallback to UserAgent Parsing
+                    if (!detectedModel) {
+                        const androidMatch = ua.match(/Android\s+[\d.]+;(?:\s*[^;]+;)?\s*([^;)]+)\s*\)/i);
+                        if (androidMatch && androidMatch[1]) {
+                            detectedModel = androidMatch[1].replace(/Build\/.*/i, '').trim();
+                        }
+                    }
+
+                    // Clean Model Text
+                    if (detectedModel) {
+                        detectedModel = detectedModel.replace(/^K\s+/i, '').replace(/^Linux;\s*/i, '').trim();
+                        if (detectedModel === "K" || detectedModel.length <= 1) {
+                            detectedModel = "";
+                        }
+                    }
+
+                    deviceName = detectedModel ? `Android (${detectedModel})` : "Android Mobile";
                 }
 
                 // 2. Exact Browser Detection Logic
