@@ -10,6 +10,44 @@
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        /* Custom YouTube Branding Masking */
+        .yt-clean-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 Aspect Ratio */
+            height: 0;
+            overflow: hidden;
+            border-radius: 12px;
+            background: #000;
+        }
+        .yt-clean-container iframe {
+            position: absolute;
+            top: -60px; /* Top title/channel header overlay ko crop/hide karta hai */
+            left: 0;
+            width: 100%;
+            height: calc(100% + 120px); /* Bottom branding ko container ke bahar push karta hai */
+            pointer-events: auto;
+        }
+        /* Dynamic Overlay Guards to prevent clicking channel/YouTube branding */
+        .yt-top-guard {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            z-index: 20;
+            background: transparent;
+        }
+        .yt-bottom-right-guard {
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 120px;
+            height: 45px;
+            z-index: 20;
+            background: transparent;
+        }
     </style>
 </head>
 <body class="bg-gray-950 text-white font-sans min-h-screen pb-16">
@@ -77,7 +115,7 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbxQl8_hMjARE8UbQGj7gu4PIGLtsgLoQsyALr3-oc92FJAiXeUcwfbBBTqjYkVs_ilR6Q/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbyYnWDQsM3F1SEQes-39YFlsCotGUfKOpbLQflmCGeJTVhbJCbyzk-0_B-vU578Snljvg/exec";
         
         // URL Parameter se Course ID fetch karein (e.g. learn.html?courseId=CRS-101)
         const urlParams = new URLSearchParams(window.location.search);
@@ -159,7 +197,7 @@
                     <div class="bg-gray-900 p-8 rounded-2xl border border-gray-800 text-center text-gray-500">
                         <i class="fa-solid fa-folder-open text-4xl mb-3 text-gray-700"></i>
                         <p class="text-sm font-bold text-gray-300">Is category me koi lecture nahi mila!</p>
-                        <p class="text-xs mt-1">Sabhhi materials dekhne ke liye "All Contents" tab par click karein.</p>
+                        <p class="text-xs mt-1">Sabhi materials dekhne ke liye "All Contents" tab par click karein.</p>
                     </div>`;
                 return;
             }
@@ -205,7 +243,7 @@
             renderLectures();
         }
 
-        // 5. Play Video or Open PDF in SweetAlert Modal
+        // 5. Play Video or Open PDF in SweetAlert Modal with Clean YouTube Masking
         function playMedia(type, url, title) {
             if (!url) {
                 Swal.fire({
@@ -213,7 +251,8 @@
                     title: 'Resource Unavailable',
                     text: 'Is lecture ka URL Google Sheets me missing hai.',
                     background: '#0f172a',
-                    color: '#fff'
+                    color: '#fff',
+                    confirmButtonColor: '#7e22ce'
                 });
                 return;
             }
@@ -222,16 +261,34 @@
             const isVideo = type.toLowerCase() === "video";
 
             if (isVideo) {
-                let embedUrl = url;
-                if (url.includes("watch?v=")) {
-                    embedUrl = url.replace("watch?v=", "embed/");
+                let videoId = "";
+
+                // Extract Video ID from various URL formats
+                if (url.includes("v=")) {
+                    videoId = url.split("v=")[1].split("&")[0];
                 } else if (url.includes("youtu.be/")) {
-                    embedUrl = url.replace("youtu.be/", "www.youtube.com/embed/");
+                    videoId = url.split("youtu.be/")[1].split("?")[0];
+                } else if (url.includes("embed/")) {
+                    videoId = url.split("embed/")[1].split("?")[0];
+                } else {
+                    videoId = url;
                 }
 
+                // YouTube Clean Masking Parameters
+                const cleanParams = "autoplay=1&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=1&playsinline=1&enablejsapi=1";
+                const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?${cleanParams}`;
+
                 embedHtml = `
-                    <div class="aspect-video w-full rounded-xl overflow-hidden mt-3 border border-gray-800 shadow-2xl">
-                        <iframe class="w-full h-full" src="${embedUrl}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                    <div class="yt-clean-container shadow-2xl border border-gray-800">
+                        <div class="yt-top-guard"></div>
+                        <div class="yt-bottom-right-guard"></div>
+                        <iframe 
+                            src="${embedUrl}" 
+                            title="${title}"
+                            frameborder="0" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                            allowfullscreen>
+                        </iframe>
                     </div>`;
             } else {
                 embedHtml = `
@@ -247,7 +304,12 @@
                 showConfirmButton: false,
                 width: '850px',
                 background: '#0f172a',
-                color: '#fff'
+                color: '#fff',
+                willClose: () => {
+                    // Modal close hone par video playback stop karne ke liye
+                    const iframe = document.querySelector('.yt-clean-container iframe');
+                    if (iframe) iframe.src = "";
+                }
             });
         }
     </script>
