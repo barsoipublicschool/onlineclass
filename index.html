@@ -547,13 +547,13 @@
                 icon: 'info',
                 html: `
                     <div style="text-align: left; font-size: 13px; color: #374151;">
-                        <p class="mb-2"><b>Step 1:</b> Payment ke liye neeche button par click karein aur Kisi bhi UPI App (GPay, PhonePe, Paytm) se payment karein.</p>
+                        <p class="mb-2"><b>Step 1:</b> Click the button below to make the payment using any UPI app (GPay, PhonePe, Paytm).</p>
                         <div style="text-align: center; margin: 15px 0;">
                             <a href="${upiUrl}" target="_blank" style="background-color: #16a34a; color: white; padding: 10px 18px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 13px; display: inline-block;">
                                 <i class="fa-solid fa-wallet mr-1"></i> Pay via UPI App (₹${price})
                             </a>
                         </div>
-                        <p class="mt-3 mb-1"><b>Step 2:</b> Payment hone ke baad <b>12-Digit UTR / Transaction ID</b> yahan enter karein:</p>
+                        <p class="mt-3 mb-1"><b>Step 2:</b> After Payment enter <b>12-Digit UTR / Transaction ID</b> here:</p>
                         <input type="text" id="utrInput" placeholder="Enter 12-Digit UTR Number" style="width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; margin-top: 5px; font-size: 14px;">
                     </div>
                 `,
@@ -565,7 +565,7 @@
                 preConfirm: () => {
                     const utr = document.getElementById('utrInput').value.trim();
                     if (!utr || utr.length < 6) {
-                        Swal.showValidationMessage('Kripya valid UTR / Transaction ID enter karein!');
+                        Swal.showValidationMessage('Please enter valid UTR / Transaction ID !');
                         return false;
                     }
                     return utr;
@@ -582,7 +582,7 @@
         async function submitPaymentToSheet(courseId, title, price, utrNumber) {
             Swal.fire({
                 title: 'Submitting Payment...',
-                text: 'Aapka UTR submit ho raha hai.',
+                text: 'Your UTR is submitting.',
                 allowOutsideClick: false,
                 didOpen: () => { Swal.showLoading(); }
             });
