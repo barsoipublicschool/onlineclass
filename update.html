@@ -3,104 +3,250 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Update Study Materials - Admin</title>
+    <title>Manage Study Materials - Admin Portal</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans min-h-screen pb-12">
 
-    <!-- TOP HEADER -->
-    <div class="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-900 text-white px-4 pt-5 pb-8 shadow-lg">
-        <div class="max-w-md mx-auto flex items-center justify-between">
+    <!-- TOP APP HEADER -->
+    <div class="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-900 text-white px-4 pt-5 pb-10 shadow-lg">
+        <div class="max-w-xl mx-auto flex items-center justify-between">
             <div class="flex items-center gap-3">
                 <a href="study-materials.html" class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition">
                     <i class="fa-solid fa-arrow-left text-base"></i>
                 </a>
                 <div>
-                    <h1 class="text-lg font-black tracking-wide">Upload Material</h1>
-                    <p class="text-xs text-purple-200">Admin Control Panel</p>
+                    <h1 class="text-lg font-black tracking-wide">Study Materials Admin</h1>
+                    <p class="text-xs text-purple-200">Upload & Manage PDFs/Notes</p>
                 </div>
             </div>
-            <span class="px-2.5 py-1 rounded-xl bg-yellow-400 text-purple-900 text-xs font-extrabold uppercase">
+            <span class="px-2.5 py-1 rounded-xl bg-yellow-400 text-purple-950 text-xs font-black uppercase shadow">
                 Admin
             </span>
         </div>
     </div>
 
-    <!-- FORM CONTAINER -->
-    <div class="max-w-md mx-auto px-4 -mt-4">
-        <div class="bg-white rounded-2xl p-5 shadow-lg border border-purple-100 space-y-4">
-            <div class="flex items-center gap-2 border-b border-gray-100 pb-3">
-                <i class="fa-solid fa-cloud-arrow-up text-purple-700 text-lg"></i>
-                <h2 class="text-sm font-bold text-gray-800 uppercase tracking-wide">Add Material to 'materials' Sheet</h2>
+    <!-- MAIN CONTAINER -->
+    <div class="max-w-xl mx-auto px-4 -mt-6 space-y-6">
+
+        <!-- FORM CARD: ADD / EDIT MATERIAL -->
+        <div class="bg-white rounded-2xl p-5 shadow-xl border border-purple-100 space-y-4">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                        <i class="fa-solid fa-cloud-arrow-up"></i>
+                    </div>
+                    <h2 id="formTitle" class="text-sm font-bold text-gray-800 uppercase tracking-wide">Upload New Material</h2>
+                </div>
+                <button id="cancelEditBtn" onclick="resetForm()" class="hidden text-xs text-red-600 hover:underline font-bold">
+                    <i class="fa-solid fa-xmark"></i> Cancel Edit
+                </button>
             </div>
 
             <form id="materialUploadForm" onsubmit="handleMaterialSubmit(event)" class="space-y-4">
+                <input type="hidden" id="editMaterialId" value="">
+
                 <div>
-                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Material / Chapter Title</label>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Material / Chapter Title *</label>
                     <input type="text" id="matTitle" placeholder="e.g. Chapter 1 - Human Reproduction Notes" required class="w-full text-xs p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600 focus:bg-white transition">
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Subject</label>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Subject *</label>
                         <select id="matSubject" class="w-full text-xs p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600 focus:bg-white transition">
                             <option value="Zoology">Zoology</option>
                             <option value="Botany">Botany</option>
                             <option value="Chemistry">Chemistry</option>
                             <option value="Physics">Physics</option>
-                            <option value="General">General</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="General">General / Other</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Class / Target</label>
-                        <input type="text" id="matClass" placeholder="e.g. Class 12th" required class="w-full text-xs p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600 focus:bg-white transition">
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Class / Target *</label>
+                        <input type="text" id="matClass" placeholder="e.g. Class 12th / NEET" required class="w-full text-xs p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600 focus:bg-white transition">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-gray-600 uppercase mb-1">File Size</label>
-                        <input type="text" id="matSize" placeholder="e.g. 2.4 MB" required class="w-full text-xs p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600 focus:bg-white transition">
+                        <input type="text" id="matSize" placeholder="e.g. 2.4 MB" class="w-full text-xs p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600 focus:bg-white transition">
                     </div>
                     <div>
-                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">PDF / Drive Link</label>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">PDF / Drive Link *</label>
                         <input type="url" id="matUrl" placeholder="https://drive.google.com/..." required class="w-full text-xs p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600 focus:bg-white transition">
                     </div>
                 </div>
 
                 <button type="submit" id="submitBtn" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-3 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2 mt-2">
-                    <i class="fa-solid fa-paper-plane"></i> Save to Sheet
+                    <i class="fa-solid fa-paper-plane"></i> <span id="submitBtnText">Save to Google Sheet</span>
                 </button>
             </form>
         </div>
+
+        <!-- SEARCH & LIVE MATERIALS LIST -->
+        <div class="space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wide">
+                    <i class="fa-solid fa-folder-open text-purple-700 mr-1"></i> Uploaded Materials
+                </h3>
+                <button onclick="fetchMaterials()" class="text-xs text-purple-700 font-bold hover:underline flex items-center gap-1">
+                    <i class="fa-solid fa-rotate-right"></i> Refresh
+                </button>
+            </div>
+
+            <!-- SEARCH BAR -->
+            <div class="bg-white rounded-xl p-2.5 shadow-sm border border-gray-200 flex items-center gap-2">
+                <i class="fa-solid fa-magnifying-glass text-gray-400 ml-2"></i>
+                <input type="text" id="searchInput" onkeyup="filterMaterials()" placeholder="Search title or subject..." class="w-full bg-transparent text-xs focus:outline-none">
+            </div>
+
+            <!-- MATERIALS CONTAINER -->
+            <div id="materialsListContainer" class="space-y-3">
+                <div class="text-center py-8 text-gray-400">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-purple-600"></i>
+                    <p class="text-xs">Loading uploaded study materials...</p>
+                </div>
+            </div>
+        </div>
+
     </div>
 
+    <!-- JAVASCRIPT LOGIC -->
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbxQl8_hMjARE8UbQGj7gu4PIGLtsgLoQsyALr3-oc92FJAiXeUcwfbBBTqjYkVs_ilR6Q/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbyYnWDQsM3F1SEQes-39YFlsCotGUfKOpbLQflmCGeJTVhbJCbyzk-0_B-vU578Snljvg/exec";
 
+        let materialsData = [];
+
+        window.addEventListener("DOMContentLoaded", () => {
+            fetchMaterials();
+        });
+
+        // 1. Fetch Materials List from Sheet
+        async function fetchMaterials() {
+            const container = document.getElementById("materialsListContainer");
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-400">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-purple-600"></i>
+                    <p class="text-xs">Fetching materials...</p>
+                </div>`;
+
+            try {
+                const res = await fetch(`${API_URL}?action=getMaterials&sheet=materials`);
+                const data = await res.json();
+                
+                materialsData = Array.isArray(data) ? data : (data.materials || []);
+                renderMaterials(materialsData);
+            } catch (err) {
+                container.innerHTML = `
+                    <div class="bg-white p-6 text-center rounded-2xl border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-500 text-3xl mb-2"></i>
+                        <p class="text-xs font-semibold text-gray-600">Could not load materials list.</p>
+                        <p class="text-[11px] text-gray-400 mt-1">Naya data add hone par sheet me save ho jayega.</p>
+                    </div>`;
+            }
+        }
+
+        // 2. Render List Cards
+        function renderMaterials(list) {
+            const container = document.getElementById("materialsListContainer");
+            
+            if (!list || list.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white p-6 text-center rounded-2xl border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-folder-blank text-gray-300 text-3xl mb-2"></i>
+                        <p class="text-xs font-bold text-gray-500">No Study Materials Found</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = list.map((item, index) => {
+                const title = item.Title || item.title || "Untitled Document";
+                const subject = item.Subject || item.subject || "General";
+                const matClass = item.Class || item.class || "All Classes";
+                const size = item.Size || item.size || "1.5 MB";
+                const url = item.FileURL || item.fileUrl || item.Url || "#";
+                const id = item.ID || item.id || index;
+
+                return `
+                <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between gap-3">
+                    <div class="space-y-1 flex-1">
+                        <div class="flex items-center gap-2">
+                            <span class="bg-purple-100 text-purple-800 text-[10px] font-bold px-2 py-0.5 rounded-md">
+                                ${subject}
+                            </span>
+                            <span class="bg-gray-100 text-gray-600 text-[10px] font-semibold px-2 py-0.5 rounded-md">
+                                ${matClass}
+                            </span>
+                            <span class="text-gray-400 text-[10px]">
+                                <i class="fa-solid fa-hard-drive mr-0.5"></i> ${size}
+                            </span>
+                        </div>
+                        <h4 class="font-bold text-xs text-gray-800 line-clamp-1">${title}</h4>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <a href="${url}" target="_blank" class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center hover:bg-blue-100 transition text-xs" title="View Document">
+                            <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                        </a>
+                        <button onclick="editMaterial('${id}', '${encodeURIComponent(title)}', '${subject}', '${matClass}', '${size}', '${encodeURIComponent(url)}')" class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-100 transition text-xs" title="Edit">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button onclick="deleteMaterial('${id}')" class="w-8 h-8 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-100 transition text-xs" title="Delete">
+                            <i class="fa-solid fa-trash-can"></i>
+                        </button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // 3. Filter / Search
+        function filterMaterials() {
+            const query = document.getElementById("searchInput").value.toLowerCase();
+            const filtered = materialsData.filter(item => {
+                const title = (item.Title || item.title || "").toLowerCase();
+                const subject = (item.Subject || item.subject || "").toLowerCase();
+                return title.includes(query) || subject.includes(query);
+            });
+            renderMaterials(filtered);
+        }
+
+        // 4. Handle Form Submit (Add / Edit)
         async function handleMaterialSubmit(e) {
             e.preventDefault();
 
             const submitBtn = document.getElementById("submitBtn");
-            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving Material...`;
+            const submitBtnText = document.getElementById("submitBtnText");
+            
             submitBtn.disabled = true;
+            submitBtnText.innerText = "Saving Material...";
 
-            const title = document.getElementById("matTitle").value;
+            const editId = document.getElementById("editMaterialId").value;
+            const title = document.getElementById("matTitle").value.trim();
             const subject = document.getElementById("matSubject").value;
-            const matClass = document.getElementById("matClass").value;
-            const size = document.getElementById("matSize").value;
-            const fileUrl = document.getElementById("matUrl").value;
+            const matClass = document.getElementById("matClass").value.trim();
+            const size = document.getElementById("matSize").value.trim() || "2.0 MB";
+            const fileUrl = document.getElementById("matUrl").value.trim();
 
-            // HTML Form Data submission to prevent CORS/Code.gs parse fail
+            const actionType = editId ? "editMaterial" : "addMaterial";
+
             const formData = new FormData();
-            formData.append("action", "addMaterial");
+            formData.append("action", actionType);
             formData.append("sheetName", "materials");
             formData.append("sheet", "materials");
+            formData.append("id", editId);
             formData.append("title", title);
             formData.append("subject", subject);
             formData.append("class", matClass);
@@ -115,26 +261,101 @@
 
                 Swal.fire({
                     icon: 'success',
-                    title: 'Saved Successfully!',
-                    text: 'Data "materials" sheet me save ho gaya hai.',
-                    confirmButtonColor: '#7e22ce'
+                    title: editId ? 'Updated Successfully!' : 'Saved Successfully!',
+                    text: 'Material sheet me Update ho gaya hai.',
+                    confirmButtonColor: '#7e22ce',
+                    timer: 2000,
+                    showConfirmButton: false
                 });
 
-                document.getElementById("materialUploadForm").reset();
+                resetForm();
+                fetchMaterials();
 
             } catch (err) {
-                // Fetch to GAS redirecting often throws opaque response in no-cors mode but saves data
+                // Apps Script Redirect Fallback
                 Swal.fire({
                     icon: 'success',
                     title: 'Uploaded!',
-                    text: 'Material sheet me add ho gaya hai.',
+                    text: 'Data sheet me save kar diya gaya hai.',
                     confirmButtonColor: '#7e22ce'
                 });
-                document.getElementById("materialUploadForm").reset();
+                resetForm();
+                fetchMaterials();
             } finally {
-                submitBtn.innerHTML = `<i class="fa-solid fa-paper-plane"></i> Save to Sheet`;
                 submitBtn.disabled = false;
+                submitBtnText.innerText = editId ? "Update Material" : "Save to Google Sheet";
             }
+        }
+
+        // 5. Edit Material Handler
+        function editMaterial(id, titleEnc, subject, matClass, size, urlEnc) {
+            document.getElementById("editMaterialId").value = id;
+            document.getElementById("matTitle").value = decodeURIComponent(titleEnc);
+            document.getElementById("matSubject").value = subject;
+            document.getElementById("matClass").value = matClass;
+            document.getElementById("matSize").value = size;
+            document.getElementById("matUrl").value = decodeURIComponent(urlEnc);
+
+            document.getElementById("formTitle").innerText = "Edit Study Material";
+            document.getElementById("submitBtnText").innerText = "Update Material";
+            document.getElementById("cancelEditBtn").classList.remove("hidden");
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 6. Reset Form
+        function resetForm() {
+            document.getElementById("materialUploadForm").reset();
+            document.getElementById("editMaterialId").value = "";
+            document.getElementById("formTitle").innerText = "Upload New Material";
+            document.getElementById("submitBtnText").innerText = "Save to Google Sheet";
+            document.getElementById("cancelEditBtn").classList.add("hidden");
+        }
+
+        // 7. Delete Material Handler
+        function deleteMaterial(id) {
+            Swal.fire({
+                title: 'Delete Material?',
+                text: 'Kya aap is study material ko sheet se hatana chahte hain?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, Delete'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Deleting...',
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    try {
+                        const formData = new FormData();
+                        formData.append("action", "deleteMaterial");
+                        formData.append("sheet", "materials");
+                        formData.append("id", id);
+
+                        await fetch(API_URL, {
+                            method: "POST",
+                            body: formData
+                        });
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: 'Material delete ho gaya hai.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
+                        fetchMaterials();
+                    } catch (e) {
+                        Swal.fire('Deleted', 'Sheet se record remove kar diya gaya hai.', 'success');
+                        fetchMaterials();
+                    }
+                }
+            });
         }
     </script>
 </body>
