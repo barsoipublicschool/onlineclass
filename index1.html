@@ -235,7 +235,25 @@ async function trackStudentLogin(studentEmail) {
     try {
         const ua = navigator.userAgent;
 
-        // 1. Browser Detection Logic
+        // 1. Exact Device Model & Name Detection Logic
+        let deviceName = "Desktop/Laptop";
+        if (/iPhone/i.test(ua)) {
+            deviceName = "iPhone (iOS)";
+        } else if (/iPad/i.test(ua)) {
+            deviceName = "iPad (iOS)";
+        } else if (/Android/i.test(ua)) {
+            // Extract model name from UserAgent if available
+            const match = ua.match(/Android\s+([\d.]+);?\s*([^;)]+)/i);
+            if (match && match[2]) {
+                // Device model like SM-G998B, Redmi Note 10, etc.
+                const rawModel = match[2].trim();
+                deviceName = `Android (${rawModel})`;
+            } else {
+                deviceName = "Android Mobile";
+            }
+        }
+
+        // 2. Exact Browser Detection Logic
         let detectedBrowser = "Other Browser";
         if (ua.includes("OPR") || ua.includes("Opera")) {
             detectedBrowser = "Opera";
@@ -249,16 +267,12 @@ async function trackStudentLogin(studentEmail) {
             detectedBrowser = "Firefox";
         }
 
-        // 2. Device Type
-        const isMobile = /Mobi|Android|iPhone/i.test(ua);
-        const deviceType = isMobile ? "Mobile" : "Desktop/Laptop";
-
-        // 3. Location Fetching Strategy (GPS First, Fallback to IP)
+        // 3. Variables for Lat/Lon and Location
+        let latLonStr = "GPS Disabled";
         let locationStr = "Unknown";
-        let ipAddress = "N/A";
 
-        // Function to get Location from Coordinates
-        const getLocationFromCoords = async (lat, lon) => {
+        // Reverse Geocoding helper function (Coords -> Address)
+        const getAddressFromCoords = async (lat, lon) => {
             try {
                 const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
                 const data = await res.json();
@@ -273,34 +287,29 @@ async function trackStudentLogin(studentEmail) {
             }
         };
 
-        // Get IP Address
-        try {
-            const ipRes = await fetch('https://api.ipify.org?format=json');
-            const ipData = await ipRes.json();
-            ipAddress = ipData.ip || "N/A";
-        } catch(e) {}
-
-        // Try HTML5 GPS Location First
+        // 4. Get GPS Coordinates & Address
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(
                 async (position) => {
-                    const lat = position.coords.latitude;
-                    const lon = position.coords.longitude;
-                    const gpsLoc = await getLocationFromCoords(lat, lon);
+                    const lat = position.coords.latitude.toFixed(5);
+                    const lon = position.coords.longitude.toFixed(5);
                     
-                    if (gpsLoc) {
-                        locationStr = gpsLoc + " (GPS)";
-                    } else {
-                        locationStr = `${lat.toFixed(2)}, ${lon.toFixed(2)} (GPS)`;
-                    }
+                    // Save Exact Latitude and Longitude
+                    latLonStr = `Lat: ${lat}, Lon: ${lon}`;
+
+                    // Fetch City/Address from Lat-Lon
+                    const address = await getAddressFromCoords(lat, lon);
+                    locationStr = address ? `${address} (GPS)` : `${lat}, ${lon}`;
+                    
                     sendPayload();
                 },
                 async (error) => {
-                    // Fallback to IP Location if user denies GPS permission
+                    // Fallback if user denies GPS permission
+                    latLonStr = "Location Permission Denied";
                     await fetchIPLocation();
                     sendPayload();
                 },
-                { timeout: 5000, enableHighAccuracy: true }
+                { timeout: 7000, enableHighAccuracy: true }
             );
         } else {
             await fetchIPLocation();
@@ -311,21 +320,23 @@ async function trackStudentLogin(studentEmail) {
             try {
                 const res = await fetch('https://ipapi.co/json/');
                 const data = await res.json();
+                latLonStr = `IP: ${data.ip || 'N/A'}`;
                 locationStr = [data.city, data.region, data.country_name].filter(Boolean).join(", ") + " (IP)";
             } catch(e) {
                 locationStr = "Location Unavailable";
             }
         }
 
+        // 5. Send Payload to Google Apps Script
         function sendPayload() {
             const payload = {
                 action: "trackLogin",
                 payload: {
                     studentEmail: studentEmail,
-                    device: deviceType,
-                    ipAddress: ipAddress,
-                    location: locationStr,
-                    browser: detectedBrowser,
+                    device: deviceName,        // Ab Mobile Model Jayega (e.g. Android (SM-A505F))
+                    ipAddress: latLonStr,       // Ab Exact Latitude & Longitude Jayega
+                    location: locationStr,     // Exact City Name (Barsoi, Bihar)
+                    browser: detectedBrowser,  // Opera / Chrome / Edge
                     os: navigator.platform
                 }
             };
@@ -340,7 +351,6 @@ async function trackStudentLogin(studentEmail) {
         console.log("Tracking error:", e);
     }
 }
-
         // Toggle Sidebar Drawer
         function toggleSidebar() {
             const sidebar = document.getElementById("sidebar");
