@@ -231,38 +231,12 @@
         });
 
         // Track Login Activity Function
-        async function trackStudentLogin(studentEmail) {
+async function trackStudentLogin(studentEmail) {
     try {
-        // 1. IP & Location Fetching (With Fallback)
-        let locationStr = "Unknown";
-        let ipAddress = "N/A";
-
-        try {
-            const ipRes = await fetch('https://ipapi.co/json/').catch(() => null);
-            if (ipRes && ipRes.ok) {
-                const ipData = await ipRes.json();
-                ipAddress = ipData.ip || "N/A";
-                const city = ipData.city || "";
-                const region = ipData.region || "";
-                const country = ipData.country_name || "";
-                locationStr = [city, region, country].filter(Boolean).join(", ");
-            } else {
-                // Fallback API if ipapi is blocked
-                const altRes = await fetch('https://ip-api.com/json/').catch(() => null);
-                if (altRes && altRes.ok) {
-                    const altData = await altRes.json();
-                    ipAddress = altData.query || "N/A";
-                    locationStr = `${altData.city || ''}, ${altData.regionName || ''}, ${altData.country || ''}`;
-                }
-            }
-        } catch (e) {
-            console.log("Location fetch error:", e);
-        }
-
-        // 2. Exact Browser Detection Logic (Detects Opera, Edge, Chrome, Safari)
         const ua = navigator.userAgent;
-        let detectedBrowser = "Other Browser";
 
+        // 1. Browser Detection Logic
+        let detectedBrowser = "Other Browser";
         if (ua.includes("OPR") || ua.includes("Opera")) {
             detectedBrowser = "Opera";
         } else if (ua.includes("Edg")) {
@@ -275,28 +249,93 @@
             detectedBrowser = "Firefox";
         }
 
-        // 3. Device Type Detection
+        // 2. Device Type
         const isMobile = /Mobi|Android|iPhone/i.test(ua);
         const deviceType = isMobile ? "Mobile" : "Desktop/Laptop";
 
-        // 4. Payload Generation
-        const payload = {
-            action: "trackLogin",
-            payload: {
-                studentEmail: studentEmail,
-                device: deviceType,
-                ipAddress: ipAddress,
-                location: locationStr || "Unknown Location",
-                browser: detectedBrowser,
-                os: navigator.platform
+        // 3. Location Fetching Strategy (GPS First, Fallback to IP)
+        let locationStr = "Unknown";
+        let ipAddress = "N/A";
+
+        // Function to get Location from Coordinates
+        const getLocationFromCoords = async (lat, lon) => {
+            try {
+                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                const data = await res.json();
+                if (data && data.address) {
+                    const city = data.address.city || data.address.town || data.address.village || data.address.county || "";
+                    const state = data.address.state || "";
+                    const country = data.address.country || "";
+                    return [city, state, country].filter(Boolean).join(", ");
+                }
+            } catch (e) {
+                return null;
             }
         };
 
-        // Send data to Apps Script
-        fetch(API_URL, {
-            method: "POST",
-            body: JSON.stringify(payload)
-        });
+        // Get IP Address
+        try {
+            const ipRes = await fetch('https://api.ipify.org?format=json');
+            const ipData = await ipRes.json();
+            ipAddress = ipData.ip || "N/A";
+        } catch(e) {}
+
+        // Try HTML5 GPS Location First
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    const lat = position.coords.latitude;
+                    const lon = position.coords.longitude;
+                    const gpsLoc = await getLocationFromCoords(lat, lon);
+                    
+                    if (gpsLoc) {
+                        locationStr = gpsLoc + " (GPS)";
+                    } else {
+                        locationStr = `${lat.toFixed(2)}, ${lon.toFixed(2)} (GPS)`;
+                    }
+                    sendPayload();
+                },
+                async (error) => {
+                    // Fallback to IP Location if user denies GPS permission
+                    await fetchIPLocation();
+                    sendPayload();
+                },
+                { timeout: 5000, enableHighAccuracy: true }
+            );
+        } else {
+            await fetchIPLocation();
+            sendPayload();
+        }
+
+        async function fetchIPLocation() {
+            try {
+                const res = await fetch('https://ipapi.co/json/');
+                const data = await res.json();
+                locationStr = [data.city, data.region, data.country_name].filter(Boolean).join(", ") + " (IP)";
+            } catch(e) {
+                locationStr = "Location Unavailable";
+            }
+        }
+
+        function sendPayload() {
+            const payload = {
+                action: "trackLogin",
+                payload: {
+                    studentEmail: studentEmail,
+                    device: deviceType,
+                    ipAddress: ipAddress,
+                    location: locationStr,
+                    browser: detectedBrowser,
+                    os: navigator.platform
+                }
+            };
+
+            fetch(API_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+        }
+
     } catch (e) {
         console.log("Tracking error:", e);
     }
