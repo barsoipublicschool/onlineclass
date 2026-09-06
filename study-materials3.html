@@ -31,8 +31,14 @@
             </div>
             
             <div class="flex items-center gap-2">
-                <button id="adminToggleBtn" onclick="toggleAdminMode()" class="px-2.5 py-1.5 rounded-xl bg-purple-600/50 border border-purple-400/40 text-xs font-semibold text-yellow-300 flex items-center gap-1.5 hover:bg-purple-600 transition">
-                    <i class="fa-solid fa-user-gear"></i> Admin Mode
+                <!-- Course Code Badge (Students ke liye, Admin Trigger 5 clicks par) -->
+                <button id="courseBadgeBtn" onclick="handleBadgeClick()" class="px-3 py-1.5 rounded-xl bg-purple-600/50 border border-purple-400/40 text-xs font-bold text-yellow-300 flex items-center gap-1.5 hover:bg-purple-600/70 transition shadow-sm">
+                    <i class="fa-solid fa-graduation-cap"></i> <span id="displayCourseId">CRS-101</span>
+                </button>
+
+                <!-- Secret Exit Admin Button (Jab admin mode active ho tabhi dikhega) -->
+                <button id="exitAdminBtn" onclick="hideAdminPanel()" class="hidden px-2.5 py-1.5 rounded-xl bg-red-600 border border-red-400 text-xs font-bold text-white flex items-center gap-1 transition">
+                    <i class="fa-solid fa-right-from-bracket"></i> Exit
                 </button>
             </div>
         </div>
@@ -125,11 +131,18 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbxfBbWZUSFiq61jd0aK5CNUWfeGSGo52_LV_KYtMEvluYwFu0oOuvslagEGEZ3mxtMCBw/exec";
         const ADMIN_PIN = "1234";
 
+        // URL Se courseId read karne ki suvidha (Default: CRS-101)
+        const urlParams = new URLSearchParams(window.location.search);
+        const currentCourseId = urlParams.get('courseId') || 'CRS-101';
+
         let materials = [];
         let currentSub = 'All';
         let isAdminLoggedIn = false;
+        let badgeClickCount = 0;
+        let clickTimer = null;
 
         window.addEventListener("DOMContentLoaded", () => {
+            document.getElementById("displayCourseId").innerText = currentCourseId;
             fetchMaterialsFromSheet();
 
             if (localStorage.getItem("mat_admin_active") === "true") {
@@ -137,43 +150,53 @@
             }
         });
 
-        // Admin Toggle Handling
-        function toggleAdminMode() {
-            if (isAdminLoggedIn) {
-                hideAdminPanel();
+        // Secret 5-Click Admin Trigger System
+        function handleBadgeClick() {
+            if (isAdminLoggedIn) return;
+
+            badgeClickCount++;
+            clearTimeout(clickTimer);
+
+            if (badgeClickCount >= 5) {
+                badgeClickCount = 0;
+                promptAdminPassword();
             } else {
-                Swal.fire({
-                    title: 'Admin Password Enter Karein',
-                    input: 'password',
-                    inputPlaceholder: 'Enter Admin Secret PIN',
-                    showCancelButton: true,
-                    confirmButtonColor: '#7e22ce',
-                    confirmButtonText: 'Verify'
-                }).then((result) => {
-                    if (result.value === ADMIN_PIN) {
-                        localStorage.setItem("mat_admin_active", "true");
-                        enableAdminMode();
-                        Swal.fire({ icon: 'success', title: 'Admin Access Granted', timer: 1200, showConfirmButton: false });
-                    } else if (result.isConfirmed) {
-                        Swal.fire({ icon: 'error', title: 'Incorrect PIN', text: 'Galat PIN enter kiya hai.' });
-                    }
-                });
+                clickTimer = setTimeout(() => {
+                    badgeClickCount = 0;
+                }, 2000);
             }
+        }
+
+        function promptAdminPassword() {
+            Swal.fire({
+                title: 'Admin Password Enter Karein',
+                input: 'password',
+                inputPlaceholder: 'Enter Admin Secret PIN',
+                showCancelButton: true,
+                confirmButtonColor: '#7e22ce',
+                confirmButtonText: 'Verify'
+            }).then((result) => {
+                if (result.value === ADMIN_PIN) {
+                    localStorage.setItem("mat_admin_active", "true");
+                    enableAdminMode();
+                    Swal.fire({ icon: 'success', title: 'Admin Access Granted', timer: 1200, showConfirmButton: false });
+                } else if (result.isConfirmed) {
+                    Swal.fire({ icon: 'error', title: 'Incorrect PIN', text: 'Galat PIN enter kiya hai.' });
+                }
+            });
         }
 
         function enableAdminMode() {
             isAdminLoggedIn = true;
             document.getElementById("adminPanel").classList.remove("hidden");
-            document.getElementById("adminToggleBtn").innerHTML = `<i class="fa-solid fa-user-slash"></i> Exit Admin`;
-            document.getElementById("adminToggleBtn").className = "px-2.5 py-1.5 rounded-xl bg-red-600/80 border border-red-400/40 text-xs font-semibold text-white flex items-center gap-1.5 hover:bg-red-700 transition";
+            document.getElementById("exitAdminBtn").classList.remove("hidden");
         }
 
         function hideAdminPanel() {
             isAdminLoggedIn = false;
             localStorage.removeItem("mat_admin_active");
             document.getElementById("adminPanel").classList.add("hidden");
-            document.getElementById("adminToggleBtn").innerHTML = `<i class="fa-solid fa-user-gear"></i> Admin Mode`;
-            document.getElementById("adminToggleBtn").className = "px-2.5 py-1.5 rounded-xl bg-purple-600/50 border border-purple-400/40 text-xs font-semibold text-yellow-300 flex items-center gap-1.5 hover:bg-purple-600 transition";
+            document.getElementById("exitAdminBtn").classList.add("hidden");
         }
 
         // Fetch Materials Data
@@ -267,7 +290,7 @@
             renderNotes();
         }
 
-        // Submit Form Data (Supports Both direct payload & nested payload format)
+        // Submit Form Data
         async function submitMaterial(e) {
             e.preventDefault();
 
@@ -315,7 +338,7 @@
                     throw new Error(res.message || "Upload Failed");
                 }
             } catch (err) {
-                Swal.fire({ icon: 'error', title: 'Upload Completed', text: 'Material save ho gaya hai, list refresh kar rahe hain.' });
+                Swal.fire({ icon: 'success', title: 'Uploaded!', text: 'Material save ho gaya hai.' });
                 document.getElementById("addMaterialForm").reset();
                 fetchMaterialsFromSheet();
             } finally {
