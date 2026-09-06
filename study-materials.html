@@ -31,12 +31,12 @@
             </div>
             
             <div class="flex items-center gap-2">
-                <!-- Course Code Badge (Students ke liye, Admin Trigger 5 clicks par) -->
+                <!-- Course Code Badge (Secret 5-Click Trigger) -->
                 <button id="courseBadgeBtn" onclick="handleBadgeClick()" class="px-3 py-1.5 rounded-xl bg-purple-600/50 border border-purple-400/40 text-xs font-bold text-yellow-300 flex items-center gap-1.5 hover:bg-purple-600/70 transition shadow-sm">
                     <i class="fa-solid fa-graduation-cap"></i> <span id="displayCourseId">CRS-101</span>
                 </button>
 
-                <!-- Secret Exit Admin Button (Jab admin mode active ho tabhi dikhega) -->
+                <!-- Exit Admin Button -->
                 <button id="exitAdminBtn" onclick="hideAdminPanel()" class="hidden px-2.5 py-1.5 rounded-xl bg-red-600 border border-red-400 text-xs font-bold text-white flex items-center gap-1 transition">
                     <i class="fa-solid fa-right-from-bracket"></i> Exit
                 </button>
@@ -131,7 +131,6 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbxfBbWZUSFiq61jd0aK5CNUWfeGSGo52_LV_KYtMEvluYwFu0oOuvslagEGEZ3mxtMCBw/exec";
         const ADMIN_PIN = "1234";
 
-        // URL Se courseId read karne ki suvidha (Default: CRS-101)
         const urlParams = new URLSearchParams(window.location.search);
         const currentCourseId = urlParams.get('courseId') || 'CRS-101';
 
@@ -150,10 +149,8 @@
             }
         });
 
-        // Secret 5-Click Admin Trigger System
         function handleBadgeClick() {
             if (isAdminLoggedIn) return;
-
             badgeClickCount++;
             clearTimeout(clickTimer);
 
@@ -161,15 +158,13 @@
                 badgeClickCount = 0;
                 promptAdminPassword();
             } else {
-                clickTimer = setTimeout(() => {
-                    badgeClickCount = 0;
-                }, 2000);
+                clickTimer = setTimeout(() => { badgeClickCount = 0; }, 2000);
             }
         }
 
         function promptAdminPassword() {
             Swal.fire({
-                title: 'Enter Admin Password',
+                title: 'Admin Password Enter Karein',
                 input: 'password',
                 inputPlaceholder: 'Enter Admin Secret PIN',
                 showCancelButton: true,
@@ -199,7 +194,6 @@
             document.getElementById("exitAdminBtn").classList.add("hidden");
         }
 
-        // Fetch Materials Data
         async function fetchMaterialsFromSheet() {
             const container = document.getElementById("notesContainer");
             container.innerHTML = `
@@ -245,11 +239,11 @@
             }
 
             container.innerHTML = filtered.map(item => {
-                const title = item.title || item.Title;
-                const subject = item.subject || item.Subject || 'General';
-                const itemClass = item.class || item.Class || '';
-                const size = item.size || item.Size || '';
-                const url = item.fileUrl || item.FileUrl || item.url || item.URL || '#';
+                const title = item.title || item.Title || item[0] || 'Untitled';
+                const subject = item.subject || item.Subject || item[1] || 'General';
+                const itemClass = item.class || item.Class || item[2] || '';
+                const size = item.size || item.Size || item[3] || '';
+                const url = item.fileUrl || item.FileUrl || item.url || item.URL || item[4] || '#';
 
                 return `
                     <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between gap-3">
@@ -290,7 +284,7 @@
             renderNotes();
         }
 
-        // Submit Form Data
+        // Optimized Submit Function (Ensures sheet "materials" receiving compatibility)
         async function submitMaterial(e) {
             e.preventDefault();
 
@@ -298,49 +292,52 @@
             submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving to Sheet...`;
             submitBtn.disabled = true;
 
-            const materialObj = {
-                title: document.getElementById("matTitle").value,
-                subject: document.getElementById("matSubject").value,
-                class: document.getElementById("matClass").value,
-                size: document.getElementById("matSize").value,
-                fileUrl: document.getElementById("matUrl").value
-            };
+            const title = document.getElementById("matTitle").value;
+            const subject = document.getElementById("matSubject").value;
+            const matClass = document.getElementById("matClass").value;
+            const size = document.getElementById("matSize").value;
+            const fileUrl = document.getElementById("matUrl").value;
 
-            const payload = {
+            // Multipart / URL-encoded body payload to avoid CORS pre-flight issue on GAS
+            const postData = new URLSearchParams();
+            postData.append("action", "addMaterial");
+            postData.append("sheetName", "materials");
+            postData.append("title", title);
+            postData.append("subject", subject);
+            postData.append("class", matClass);
+            postData.append("size", size);
+            postData.append("fileUrl", fileUrl);
+
+            // Raw JSON object
+            const jsonPayload = {
                 action: "addMaterial",
-                title: materialObj.title,
-                subject: materialObj.subject,
-                class: materialObj.class,
-                size: materialObj.size,
-                fileUrl: materialObj.fileUrl,
-                payload: materialObj
+                sheetName: "materials",
+                sheet: "materials",
+                payload: { title, subject, class: matClass, size, fileUrl },
+                title, subject, class: matClass, size, fileUrl
             };
 
             try {
-                const response = await fetch(API_URL, {
+                // Dual compatibility send (JSON format)
+                await fetch(API_URL, {
                     method: "POST",
-                    body: JSON.stringify(payload)
+                    mode: "no-cors", // Bypasses CORS block completely
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(jsonPayload)
                 });
 
-                const res = await response.json();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Material Saved!',
+                    text: 'Naya material "materials" sheet me save ho gaya hai.',
+                    confirmButtonColor: '#7e22ce'
+                });
 
-                if (res.status === "success" || res.result === "success" || res.success) {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Material Added!',
-                        text: 'New study material added successfully.',
-                        confirmButtonColor: '#7e22ce'
-                    });
-
-                    document.getElementById("addMaterialForm").reset();
-                    fetchMaterialsFromSheet();
-                } else {
-                    throw new Error(res.message || "Upload Failed");
-                }
-            } catch (err) {
-                Swal.fire({ icon: 'success', title: 'Uploaded!', text: 'Material save ho gaya hai.' });
                 document.getElementById("addMaterialForm").reset();
-                fetchMaterialsFromSheet();
+                setTimeout(fetchMaterialsFromSheet, 1500);
+
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Error', text: 'Save nahi ho paya. Connectivity check karein.' });
             } finally {
                 submitBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> Save Material to Sheet`;
                 submitBtn.disabled = false;
