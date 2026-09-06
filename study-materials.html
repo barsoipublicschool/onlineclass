@@ -128,7 +128,7 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbxfBbWZUSFiq61jd0aK5CNUWfeGSGo52_LV_KYtMEvluYwFu0oOuvslagEGEZ3mxtMCBw/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbxQl8_hMjARE8UbQGj7gu4PIGLtsgLoQsyALr3-oc92FJAiXeUcwfbBBTqjYkVs_ilR6Q/exec";
         const ADMIN_PIN = "1234";
 
         const urlParams = new URLSearchParams(window.location.search);
@@ -164,7 +164,7 @@
 
         function promptAdminPassword() {
             Swal.fire({
-                title: 'Admin Password Enter Karein',
+                title: 'Enter Admin Password',
                 input: 'password',
                 inputPlaceholder: 'Enter Admin Secret PIN',
                 showCancelButton: true,
@@ -176,7 +176,7 @@
                     enableAdminMode();
                     Swal.fire({ icon: 'success', title: 'Admin Access Granted', timer: 1200, showConfirmButton: false });
                 } else if (result.isConfirmed) {
-                    Swal.fire({ icon: 'error', title: 'Incorrect PIN', text: 'Galat PIN enter kiya hai.' });
+                    Swal.fire({ icon: 'error', title: 'Incorrect PIN', text: 'Incorrect PIN .' });
                 }
             });
         }
@@ -329,7 +329,7 @@
                 Swal.fire({
                     icon: 'success',
                     title: 'Material Saved!',
-                    text: 'Naya material "materials" sheet me save ho gaya hai.',
+                    text: 'New material successfully submitted.',
                     confirmButtonColor: '#7e22ce'
                 });
 
