@@ -9,6 +9,7 @@
     <!-- FontAwesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
         .no-scrollbar::-webkit-scrollbar { display: none; }
@@ -211,14 +212,13 @@
 
     <!-- JavaScript Execution Engine -->
     <script>
-        // Updated Google Web App URL
         const API_URL = "https://script.google.com/macros/s/AKfycbyYnWDQsM3F1SEQes-39YFlsCotGUfKOpbLQflmCGeJTVhbJCbyzk-0_B-vU578Snljvg/exec";
-        const MERCHANT_UPI_ID = "riyazahmad5@okaxis"; // Merchant UPI ID
+        const MERCHANT_UPI_ID = "riyazahmad5@okaxis";
         
         let loggedInStudent = null;
         let allCoursesList = [];
-        let studentPayments = []; // Live verified payments status list
-        let currentViewMode = 'buy'; // 'buy' OR 'my'
+        let studentPayments = [];
+        let currentViewMode = 'buy';
         let currentCategory = 'All';
 
         // Auto Login Check
@@ -230,127 +230,160 @@
             }
         });
 
-        // Track Login Activity Function
-async function trackStudentLogin(studentEmail) {
-    try {
-        const ua = navigator.userAgent;
-
-        // 1. Exact Device Model & Name Detection Logic
-        let deviceName = "Desktop/Laptop";
-        if (/iPhone/i.test(ua)) {
-            deviceName = "iPhone (iOS)";
-        } else if (/iPad/i.test(ua)) {
-            deviceName = "iPad (iOS)";
-        } else if (/Android/i.test(ua)) {
-            // Extract model name from UserAgent if available
-            const match = ua.match(/Android\s+([\d.]+);?\s*([^;)]+)/i);
-            if (match && match[2]) {
-                // Device model like SM-G998B, Redmi Note 10, etc.
-                const rawModel = match[2].trim();
-                deviceName = `Android (${rawModel})`;
-            } else {
-                deviceName = "Android Mobile";
-            }
-        }
-
-        // 2. Exact Browser Detection Logic
-        let detectedBrowser = "Other Browser";
-        if (ua.includes("OPR") || ua.includes("Opera")) {
-            detectedBrowser = "Opera";
-        } else if (ua.includes("Edg")) {
-            detectedBrowser = "Microsoft Edge";
-        } else if (ua.includes("Chrome")) {
-            detectedBrowser = "Chrome";
-        } else if (ua.includes("Safari")) {
-            detectedBrowser = "Safari";
-        } else if (ua.includes("Firefox")) {
-            detectedBrowser = "Firefox";
-        }
-
-        // 3. Variables for Lat/Lon and Location
-        let latLonStr = "GPS Disabled";
-        let locationStr = "Unknown";
-
-        // Reverse Geocoding helper function (Coords -> Address)
-        const getAddressFromCoords = async (lat, lon) => {
+        // Track Login Activity Function with SweetAlert2 Integration
+        async function trackStudentLogin(studentEmail) {
             try {
-                const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
-                const data = await res.json();
-                if (data && data.address) {
-                    const city = data.address.city || data.address.town || data.address.village || data.address.county || "";
-                    const state = data.address.state || "";
-                    const country = data.address.country || "";
-                    return [city, state, country].filter(Boolean).join(", ");
+                const ua = navigator.userAgent;
+
+                // 1. Device Name & Model Detection
+                let deviceName = "Desktop/Laptop";
+                if (/iPhone/i.test(ua)) {
+                    deviceName = "iPhone (iOS)";
+                } else if (/iPad/i.test(ua)) {
+                    deviceName = "iPad (iOS)";
+                } else if (/Android/i.test(ua)) {
+                    const match = ua.match(/Android\s+([\d.]+);?\s*([^;)]+)/i);
+                    if (match && match[2]) {
+                        const rawModel = match[2].trim();
+                        deviceName = rawModel.includes("23053RN02I") ? "Redmi 12" : `Android (${rawModel})`;
+                    } else {
+                        deviceName = "Android Mobile";
+                    }
                 }
+
+                // 2. Exact Browser Detection Logic
+                let detectedBrowser = "Other Browser";
+                if (ua.includes("OPR") || ua.includes("Opera")) {
+                    detectedBrowser = "Opera";
+                } else if (ua.includes("Edg")) {
+                    detectedBrowser = "Microsoft Edge";
+                } else if (ua.includes("Chrome")) {
+                    detectedBrowser = "Chrome";
+                } else if (ua.includes("Safari")) {
+                    detectedBrowser = "Safari";
+                } else if (ua.includes("Firefox")) {
+                    detectedBrowser = "Firefox";
+                }
+
+                let latLonStr = "GPS Disabled";
+                let locationStr = "Unknown";
+
+                const getAddressFromCoords = async (lat, lon) => {
+                    try {
+                        const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                        const data = await res.json();
+                        if (data && data.address) {
+                            const city = data.address.city || data.address.town || data.address.village || data.address.county || "";
+                            const state = data.address.state || "";
+                            const country = data.address.country || "";
+                            return [city, state, country].filter(Boolean).join(", ");
+                        }
+                    } catch (e) {
+                        return null;
+                    }
+                };
+
+                // SweetAlert Permission Request
+                Swal.fire({
+                    title: 'Location Verification',
+                    text: 'Aapki attendance aur security ke liye location access required hai. Kripya allow karein.',
+                    icon: 'info',
+                    showCancelButton: false,
+                    confirmButtonColor: '#7e22ce',
+                    confirmButtonText: 'OK, Proceed'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        Swal.fire({
+                            title: 'Fetching Location...',
+                            text: 'Kripya thoda intzar karein',
+                            allowOutsideClick: false,
+                            didOpen: () => { Swal.showLoading(); }
+                        });
+
+                        if ("geolocation" in navigator) {
+                            navigator.geolocation.getCurrentPosition(
+                                async (position) => {
+                                    const lat = position.coords.latitude.toFixed(5);
+                                    const lon = position.coords.longitude.toFixed(5);
+                                    
+                                    latLonStr = `Lat: ${lat}, Lon: ${lon}`;
+                                    const address = await getAddressFromCoords(lat, lon);
+                                    locationStr = address ? `${address} (GPS)` : `${lat}, ${lon}`;
+                                    
+                                    await sendPayload();
+
+                                    Swal.fire({
+                                        icon: 'success',
+                                        title: 'Login Successful!',
+                                        text: `Location: ${locationStr}`,
+                                        timer: 2000,
+                                        showConfirmButton: false
+                                    });
+                                },
+                                async (error) => {
+                                    latLonStr = "Permission Denied";
+                                    await fetchIPLocation();
+                                    await sendPayload();
+
+                                    Swal.fire({
+                                        icon: 'warning',
+                                        title: 'GPS Permission Denied',
+                                        text: 'GPS location nahi mila, IP Location record ki gayi hai.',
+                                        timer: 2500,
+                                        showConfirmButton: false
+                                    });
+                                },
+                                { timeout: 7000, enableHighAccuracy: true }
+                            );
+                        } else {
+                            fetchIPLocation().then(() => {
+                                sendPayload();
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Login Successful!',
+                                    timer: 2000,
+                                    showConfirmButton: false
+                                });
+                            });
+                        }
+                    }
+                });
+
+                async function fetchIPLocation() {
+                    try {
+                        const res = await fetch('https://ipapi.co/json/');
+                        const data = await res.json();
+                        latLonStr = `IP: ${data.ip || 'N/A'}`;
+                        locationStr = [data.city, data.region, data.country_name].filter(Boolean).join(", ") + " (IP)";
+                    } catch(e) {
+                        locationStr = "Location Unavailable";
+                    }
+                }
+
+                async function sendPayload() {
+                    const payload = {
+                        action: "trackLogin",
+                        payload: {
+                            studentEmail: studentEmail,
+                            device: deviceName,
+                            ipAddress: latLonStr,
+                            location: locationStr,
+                            browser: detectedBrowser,
+                            os: navigator.platform
+                        }
+                    };
+
+                    await fetch(API_URL, {
+                        method: "POST",
+                        body: JSON.stringify(payload)
+                    });
+                }
+
             } catch (e) {
-                return null;
-            }
-        };
-
-        // 4. Get GPS Coordinates & Address
-        if ("geolocation" in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                async (position) => {
-                    const lat = position.coords.latitude.toFixed(5);
-                    const lon = position.coords.longitude.toFixed(5);
-                    
-                    // Save Exact Latitude and Longitude
-                    latLonStr = `Lat: ${lat}, Lon: ${lon}`;
-
-                    // Fetch City/Address from Lat-Lon
-                    const address = await getAddressFromCoords(lat, lon);
-                    locationStr = address ? `${address} (GPS)` : `${lat}, ${lon}`;
-                    
-                    sendPayload();
-                },
-                async (error) => {
-                    // Fallback if user denies GPS permission
-                    latLonStr = "Location Permission Denied";
-                    await fetchIPLocation();
-                    sendPayload();
-                },
-                { timeout: 7000, enableHighAccuracy: true }
-            );
-        } else {
-            await fetchIPLocation();
-            sendPayload();
-        }
-
-        async function fetchIPLocation() {
-            try {
-                const res = await fetch('https://ipapi.co/json/');
-                const data = await res.json();
-                latLonStr = `IP: ${data.ip || 'N/A'}`;
-                locationStr = [data.city, data.region, data.country_name].filter(Boolean).join(", ") + " (IP)";
-            } catch(e) {
-                locationStr = "Location Unavailable";
+                console.log("Tracking error:", e);
             }
         }
 
-        // 5. Send Payload to Google Apps Script
-        function sendPayload() {
-            const payload = {
-                action: "trackLogin",
-                payload: {
-                    studentEmail: studentEmail,
-                    device: deviceName,        // Ab Mobile Model Jayega (e.g. Android (SM-A505F))
-                    ipAddress: latLonStr,       // Ab Exact Latitude & Longitude Jayega
-                    location: locationStr,     // Exact City Name (Barsoi, Bihar)
-                    browser: detectedBrowser,  // Opera / Chrome / Edge
-                    os: navigator.platform
-                }
-            };
-
-            fetch(API_URL, {
-                method: "POST",
-                body: JSON.stringify(payload)
-            });
-        }
-
-    } catch (e) {
-        console.log("Tracking error:", e);
-    }
-}
         // Toggle Sidebar Drawer
         function toggleSidebar() {
             const sidebar = document.getElementById("sidebar");
@@ -359,7 +392,6 @@ async function trackStudentLogin(studentEmail) {
             overlay.classList.toggle("hidden");
         }
 
-        // Separate Page Redirection Helper
         function navigatePage(page) {
             if(page === 'dashboard') window.location.href = "dashboard.html";
             else if(page === 'materials') window.location.href = "study-materials.html";
@@ -370,7 +402,6 @@ async function trackStudentLogin(studentEmail) {
             else if(page === 'notices') window.location.href = "notices.html";
         }
 
-        // Tab Switch Function (Login / Register)
         function switchAuthTab(tab) {
             const loginForm = document.getElementById("loginForm");
             const registerForm = document.getElementById("registerForm");
@@ -415,15 +446,14 @@ async function trackStudentLogin(studentEmail) {
                     loggedInStudent = match;
                     localStorage.setItem("cw_student", JSON.stringify(match));
                     
-                    // Track student login in background
-                    trackStudentLogin(match.Email || match.Mobile || userVal);
-
                     showPortal();
+                    // Track student login in background with SweetAlert
+                    trackStudentLogin(match.Email || match.Mobile || userVal);
                 } else {
                     Swal.fire({
                         icon: 'error',
                         title: 'Login Failed',
-                        text: ' Wrong Password or Mobile/Email!',
+                        text: 'Wrong Password or Mobile/Email!',
                         confirmButtonColor: '#7e22ce'
                     });
                 }
@@ -492,7 +522,6 @@ async function trackStudentLogin(studentEmail) {
             const displayName = loggedInStudent.FullName || loggedInStudent.Name || 'Student';
             document.getElementById("studentWelcome").innerText = `Hi, ${displayName.split(' ')[0]}`;
             
-            // Sidebar User Data Update
             document.getElementById("sideStudentName").innerText = displayName;
             document.getElementById("sideStudentMobile").innerText = loggedInStudent.Mobile || loggedInStudent.Email || 'Student';
             document.getElementById("sideAvatar").innerText = displayName.charAt(0).toUpperCase();
@@ -512,7 +541,6 @@ async function trackStudentLogin(studentEmail) {
             try {
                 const studentIdentifier = loggedInStudent.Email || loggedInStudent.Mobile || '';
                 
-                // Fetch both Courses and Payments in parallel
                 const [coursesRes, paymentsRes] = await Promise.all([
                     fetch(`${API_URL}?action=getCourses`),
                     fetch(`${API_URL}?action=getStudentPayments&email=${encodeURIComponent(studentIdentifier)}`)
@@ -527,7 +555,7 @@ async function trackStudentLogin(studentEmail) {
             }
         }
 
-        // 5. Render Batches List with Anti-Fraud Verification Controls
+        // 5. Render Batches List
         function renderBatches() {
             const container = document.getElementById("batchesContainer");
             const searchTxt = document.getElementById("searchInput").value.toLowerCase();
@@ -536,14 +564,12 @@ async function trackStudentLogin(studentEmail) {
                 const matchesSearch = c.Title.toLowerCase().includes(searchTxt);
                 const matchesCat = currentCategory === 'All' || (c.Category && c.Category.toLowerCase().includes(currentCategory.toLowerCase()));
                 
-                // Match against real-time Payments Sheet
                 const payRecord = studentPayments.find(p => String(p.CourseID || p["Course ID"]) === String(c.CourseID));
                 const isApproved = payRecord && (payRecord.Status === "APPROVED" || payRecord.Status === "Paid");
 
                 if (currentViewMode === 'my') {
                     return matchesSearch && matchesCat && isApproved;
                 } else {
-                    // Buy Mode: Available courses to buy or pending verification
                     return matchesSearch && matchesCat && !isApproved;
                 }
             });
@@ -565,8 +591,6 @@ async function trackStudentLogin(studentEmail) {
 
                 return `
                 <div class="bg-gray-900 text-white rounded-2xl overflow-hidden shadow-xl border border-gray-800 flex flex-col justify-between">
-                    
-                    <!-- BATCH HEADER & IMAGE CONTAINER -->
                     <div class="relative">
                         <img src="${course.ThumbnailURL || 'https://picsum.photos/400/200'}" class="w-full h-44 object-cover">
                         
@@ -579,12 +603,10 @@ async function trackStudentLogin(studentEmail) {
                         </span>
                     </div>
 
-                    <!-- BATCH DETAILS -->
                     <div class="p-4">
                         <h3 class="font-black text-lg text-white tracking-wide">${course.Title}</h3>
                         <p class="text-gray-400 text-xs mt-1 line-clamp-2">${course.Description || 'Target for Academic & Competitive Exams with India Top Educators.'}</p>
 
-                        <!-- PRICE & OFFER -->
                         <div class="mt-3 flex items-center justify-between border-t border-gray-800 pt-3">
                             <div>
                                 <span class="text-gray-400 text-[10px] uppercase block font-semibold">Registration Fees</span>
@@ -598,7 +620,6 @@ async function trackStudentLogin(studentEmail) {
                         </div>
                     </div>
 
-                    <!-- BOTTOM BUTTONS WITH REALTIME STATUS LOGIC -->
                     <div class="bg-gray-950 p-3 flex items-center gap-2 border-t border-gray-800">
                         ${isApproved ? `
                             <button onclick="viewLectures('${course.CourseID}')" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs py-2.5 rounded-xl transition shadow flex items-center justify-center gap-2">
@@ -619,7 +640,6 @@ async function trackStudentLogin(studentEmail) {
             }).join('');
         }
 
-        // 6. Filter by Category
         function filterCategory(cat) {
             currentCategory = cat;
             document.querySelectorAll('.cat-chip').forEach(btn => {
@@ -632,7 +652,6 @@ async function trackStudentLogin(studentEmail) {
             renderBatches();
         }
 
-        // 7. Toggle Buy Batches vs My Batches
         function toggleBatchTab() {
             if (currentViewMode === 'buy') {
                 switchBatchTab('my');
@@ -658,12 +677,11 @@ async function trackStudentLogin(studentEmail) {
             renderBatches();
         }
 
-        // 8. Search Filter
         function filterBatches() {
             renderBatches();
         }
 
-        // 9. Integrated UPI Payment Gateway Action
+        // UPI Payment Action
         function purchaseCourse(courseId, title, price) {
             const upiUrl = `upi://pay?pa=${MERCHANT_UPI_ID}&pn=${encodeURIComponent('ClassWalla')}&am=${price}&cu=INR&tn=${encodeURIComponent('Batch Purchase - ' + title)}`;
 
@@ -703,7 +721,6 @@ async function trackStudentLogin(studentEmail) {
             });
         }
 
-        // 10. Save Payment & Request Verification from Admin
         async function submitPaymentToSheet(courseId, title, price, utrNumber) {
             Swal.fire({
                 title: 'Submitting Payment...',
@@ -738,7 +755,6 @@ async function trackStudentLogin(studentEmail) {
                         confirmButtonColor: '#6d28d9'
                     });
 
-                    // Reload fresh data to show Pending Status
                     loadAllBatches();
                 } else {
                     Swal.fire({
@@ -754,12 +770,10 @@ async function trackStudentLogin(studentEmail) {
             }
         }
 
-        // 11. Redirect to Classroom
         function viewLectures(courseId) {
             window.location.href = `learn.html?courseId=${courseId}`;
         }
 
-        // 12. Logout
         function logout() {
             localStorage.removeItem("cw_student");
             location.reload();
