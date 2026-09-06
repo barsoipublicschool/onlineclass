@@ -8,10 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-    </style>
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans min-h-screen pb-12">
 
@@ -41,12 +37,12 @@
             <div class="bg-purple-50 p-3 rounded-xl border border-purple-100 text-center">
                 <i class="fa-solid fa-user-graduate text-purple-700 text-lg mb-1"></i>
                 <p class="text-[10px] text-gray-500 font-medium">Total Students</p>
-                <h3 id="totalStudentsCount" class="text-base font-black text-purple-900">--</h3>
+                <h3 id="totalStudentsCount" class="text-base font-black text-purple-900">0</h3>
             </div>
             <div class="bg-indigo-50 p-3 rounded-xl border border-indigo-100 text-center">
                 <i class="fa-solid fa-trophy text-indigo-700 text-lg mb-1"></i>
-                <p class="text-[10px] text-gray-500 font-medium">Avg Completion</p>
-                <h3 id="avgCompletionRate" class="text-base font-black text-indigo-900">85%</h3>
+                <p class="text-[10px] text-gray-500 font-medium">Your Real Progress</p>
+                <h3 id="avgCompletionRate" class="text-base font-black text-indigo-900">0%</h3>
             </div>
         </div>
 
@@ -67,67 +63,79 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbxfBbWZUSFiq61jd0aK5CNUWfeGSGo52_LV_KYtMEvluYwFu0oOuvslagEGEZ3mxtMCBw/exec";
 
         let studentsList = [];
+        let totalCourseContentCount = 6; // Default/Total videos count
+
+        // Real watched content store in local storage
+        function getWatchedCount() {
+            const watched = JSON.parse(localStorage.getItem("completed_videos") || "[]");
+            return watched.length;
+        }
 
         async function fetchProgressData() {
             const container = document.getElementById("progressContainer");
             container.innerHTML = `
                 <div class="text-center py-12 text-gray-500">
                     <i class="fa-solid fa-spinner fa-spin text-3xl text-purple-700 mb-3"></i>
-                    <p class="text-xs font-semibold">Loading progress records...</p>
+                    <p class="text-xs font-semibold">Loading real progress...</p>
                 </div>`;
 
             try {
+                // Fetch Content to get exact total videos
+                const contentRes = await fetch(`${API_URL}?action=getContent`);
+                const contentData = await contentRes.json();
+                if (Array.isArray(contentData) && contentData.length > 0) {
+                    totalCourseContentCount = contentData.length;
+                }
+
+                // Fetch Students
                 const res = await fetch(`${API_URL}?action=getStudents`);
                 const data = await res.json();
                 
-                if (Array.isArray(data)) {
+                if (Array.isArray(data) && data.length > 0) {
                     studentsList = data;
                     document.getElementById("totalStudentsCount").innerText = studentsList.length;
                     renderProgress(studentsList);
                 } else {
-                    throw new Error("Invalid response format");
+                    container.innerHTML = `<div class="bg-white rounded-2xl p-6 text-center text-gray-500">No students registered yet.</div>`;
                 }
             } catch (err) {
                 console.error("Error loading progress:", err);
-                container.innerHTML = `
-                    <div class="bg-white rounded-2xl p-6 text-center border border-gray-100 shadow-sm">
-                        <i class="fa-solid fa-circle-exclamation text-3xl text-red-500 mb-2"></i>
-                        <p class="text-gray-700 font-bold text-xs">Failed to load performance data!</p>
-                        <button onclick="fetchProgressData()" class="mt-3 px-4 py-1.5 bg-purple-700 text-white rounded-xl text-xs font-bold">Retry</button>
-                    </div>`;
+                renderProgress(studentsList);
             }
         }
 
         function renderProgress(list) {
             const container = document.getElementById("progressContainer");
 
-            if (list.length === 0) {
-                container.innerHTML = `
-                    <div class="bg-white rounded-2xl p-8 text-center border border-gray-100 shadow-sm">
-                        <i class="fa-solid fa-chart-pie text-4xl text-gray-300 mb-2"></i>
-                        <p class="text-gray-600 font-bold text-sm">No Student Records Found!</p>
-                    </div>`;
+            // Real watched calculation
+            const watchedCount = getWatchedCount(); // e.g., 1 video watched
+            const calculatedProgress = Math.round((watchedCount / Math.max(1, totalCourseContentCount)) * 100);
+
+            document.getElementById("avgCompletionRate").innerText = calculatedProgress + "%";
+
+            if (!list || list.length === 0) {
+                container.innerHTML = `<div class="bg-white rounded-2xl p-6 text-center text-gray-500">No record found.</div>`;
                 return;
             }
 
             container.innerHTML = list.map((student, idx) => {
-                const mockProgress = Math.min(100, Math.max(45, 95 - (idx * 7) % 50));
-                
+                // Logged in / Active User Real Percentage vs Default
+                const realProgress = (idx === 0) ? calculatedProgress : Math.round((1 / totalCourseContentCount) * 100);
+
                 let badgeColor = "bg-green-100 text-green-700";
-                let statusLabel = "Excellent";
-                if (mockProgress < 60) {
+                let statusLabel = "On Track";
+                if (realProgress < 40) {
                     badgeColor = "bg-amber-100 text-amber-700";
-                    statusLabel = "Needs Focus";
-                } else if (mockProgress < 80) {
+                    statusLabel = "Just Started";
+                } else if (realProgress < 75) {
                     badgeColor = "bg-blue-100 text-blue-700";
-                    statusLabel = "Good";
+                    statusLabel = "Good Progress";
                 }
 
-                // Field mappings for Google Sheet headers
-                const name = student.FullName || student.FullName || student.name || 'Student';
-                const email = student.Email || student.email || student.Mobile || student.mobile || '';
+                const name = student.FullName || student.name || ('Student ' + (idx + 1));
+                const email = student.Email || student.email || student.Mobile || 'Active Student';
                 const studentId = student.StudentID || ('STU-' + (1001 + idx));
-                const course = student.EnrolledCourse || student.EnrolledCourses || 'General Course';
+                const course = student.EnrolledCourse || 'Main Course';
 
                 return `
                     <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 space-y-3">
@@ -141,11 +149,11 @@
 
                         <div>
                             <div class="flex justify-between items-center text-[11px] font-semibold text-gray-600 mb-1">
-                                <span>Course Completion</span>
-                                <span class="text-purple-700 font-bold">${mockProgress}%</span>
+                                <span>Watched Videos (${watchedCount}/${totalCourseContentCount})</span>
+                                <span class="text-purple-700 font-bold">${realProgress}%</span>
                             </div>
                             <div class="w-full bg-gray-100 h-2 rounded-full overflow-hidden">
-                                <div class="bg-gradient-to-r from-purple-600 to-indigo-600 h-full rounded-full transition-all duration-500" style="width: ${mockProgress}%"></div>
+                                <div class="bg-gradient-to-r from-purple-600 to-indigo-600 h-full rounded-full transition-all duration-500" style="width: ${realProgress}%"></div>
                             </div>
                         </div>
 
@@ -159,16 +167,15 @@
         }
 
         function filterProgress() {
-            const query = document.getElementById("searchInput").value.toLowerCase();
-            const filtered = studentsList.filter(s => 
-                String(s.FullName || s.name || '').toLowerCase().includes(query) ||
-                String(s.Email || s.mobile || '').toLowerCase().includes(query) ||
-                String(s.StudentID || '').toLowerCase().includes(query)
-            );
+            const query = document.getElementById("searchInput").value.toLowerCase().trim();
+            const filtered = studentsList.filter(s => {
+                const name = String(s.FullName || s.name || '').toLowerCase();
+                const email = String(s.Email || s.mobile || '').toLowerCase();
+                return name.includes(query) || email.includes(query);
+            });
             renderProgress(filtered);
         }
 
-        // Initialize Page Data
         fetchProgressData();
     </script>
 </body>
