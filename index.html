@@ -112,13 +112,13 @@
                         <i class="fa-solid fa-cart-shopping text-yellow-400 w-5"></i> Buy Batches / Store
                     </a>
                     <a href="javascript:void(0)" onclick="toggleSidebar(); switchBatchTab('my')" class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-xl transition">
-                        <i class="fa-solid fa-book-bookmark text-blue-400 w-5"></i> My Batches
+                        <i class="fa-solid fa-book-bookmark text-yellow-400 w-5"></i> My Batches
                     </a>
                     <a href="javascript:void(0)" onclick="toggleSidebar(); navigatePage('materials')" class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-xl transition">
                         <i class="fa-solid fa-folder-open text-amber-400 w-5"></i> Study Materials
                     </a>
                     <a href="javascript:void(0)" onclick="toggleSidebar(); navigatePage('assignments')" class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-xl transition">
-                        <i class="fa-solid fa-file-pen text-green-400 w-5"></i> Assignments & HW
+                        <i class="fa-solid fa-file-pen text-teal-400 w-5"></i> Assignments & HW
                     </a>
                     <a href="javascript:void(0)" onclick="toggleSidebar(); navigatePage('tests')" class="flex items-center gap-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-xl transition">
                         <i class="fa-solid fa-list-check text-rose-400 w-5"></i> Online Tests & Quizzes
@@ -341,7 +341,7 @@
                 // Mandatory SweetAlert Permission Prompt
                 Swal.fire({
                     title: 'Location Permission Required',
-                    text: 'Portal me login ke liye Location access dena compulsory (MANDATORY) hai.',
+                    text: 'Location access is compulsory (MANDATORY).',
                     icon: 'warning',
                     allowOutsideClick: false,
                     allowEscapeKey: false,
@@ -363,7 +363,7 @@
 
                         Swal.fire({
                             title: 'Verifying Location...',
-                            text: 'Kripya browser prompt par "Allow" par click karein.',
+                            text: 'Please "Allow" in browser prompt.',
                             allowOutsideClick: false,
                             allowEscapeKey: false,
                             didOpen: () => { Swal.showLoading(); }
@@ -393,7 +393,7 @@
                                 Swal.fire({
                                     icon: 'error',
                                     title: 'Location Denied!',
-                                    text: 'Location Access compulsory hai. Portal me aage badhne ke liye Location allow karein.',
+                                    text: 'Location Access is compulsory.Allow location access to proceed on the portal.',
                                     confirmButtonColor: '#7e22ce'
                                 });
                                 resolve(false);
@@ -404,7 +404,7 @@
                         Swal.fire({
                             icon: 'info',
                             title: 'Login Cancelled',
-                            text: 'Location access ke bina aap login nahi kar sakte.'
+                            text: 'You cannot login without Location access.'
                         });
                         resolve(false);
                     }
