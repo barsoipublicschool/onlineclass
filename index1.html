@@ -230,9 +230,9 @@
             }
         });
 
-        // Track Login Activity Function with SweetAlert2 Integration
+        // Track Login Activity Function - MANDATORY LOCATION PERMISSION
         async function trackStudentLogin(studentEmail) {
-            try {
+            return new Promise((resolve) => {
                 const ua = navigator.userAgent;
 
                 // 1. Device Name & Model Detection
@@ -265,9 +265,6 @@
                     detectedBrowser = "Firefox";
                 }
 
-                let latLonStr = "GPS Disabled";
-                let locationStr = "Unknown";
-
                 const getAddressFromCoords = async (lat, lon) => {
                     try {
                         const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
@@ -283,84 +280,7 @@
                     }
                 };
 
-                // SweetAlert Permission Request
-                Swal.fire({
-                    title: 'Location Verification',
-                    text: 'Aapki attendance aur security ke liye location access required hai. Kripya allow karein.',
-                    icon: 'info',
-                    showCancelButton: false,
-                    confirmButtonColor: '#7e22ce',
-                    confirmButtonText: 'OK, Proceed'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        Swal.fire({
-                            title: 'Fetching Location...',
-                            text: 'Kripya thoda intzar karein',
-                            allowOutsideClick: false,
-                            didOpen: () => { Swal.showLoading(); }
-                        });
-
-                        if ("geolocation" in navigator) {
-                            navigator.geolocation.getCurrentPosition(
-                                async (position) => {
-                                    const lat = position.coords.latitude.toFixed(5);
-                                    const lon = position.coords.longitude.toFixed(5);
-                                    
-                                    latLonStr = `Lat: ${lat}, Lon: ${lon}`;
-                                    const address = await getAddressFromCoords(lat, lon);
-                                    locationStr = address ? `${address} (GPS)` : `${lat}, ${lon}`;
-                                    
-                                    await sendPayload();
-
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Login Successful!',
-                                        text: `Location: ${locationStr}`,
-                                        timer: 2000,
-                                        showConfirmButton: false
-                                    });
-                                },
-                                async (error) => {
-                                    latLonStr = "Permission Denied";
-                                    await fetchIPLocation();
-                                    await sendPayload();
-
-                                    Swal.fire({
-                                        icon: 'warning',
-                                        title: 'GPS Permission Denied',
-                                        text: 'GPS location nahi mila, IP Location record ki gayi hai.',
-                                        timer: 2500,
-                                        showConfirmButton: false
-                                    });
-                                },
-                                { timeout: 7000, enableHighAccuracy: true }
-                            );
-                        } else {
-                            fetchIPLocation().then(() => {
-                                sendPayload();
-                                Swal.fire({
-                                    icon: 'success',
-                                    title: 'Login Successful!',
-                                    timer: 2000,
-                                    showConfirmButton: false
-                                });
-                            });
-                        }
-                    }
-                });
-
-                async function fetchIPLocation() {
-                    try {
-                        const res = await fetch('https://ipapi.co/json/');
-                        const data = await res.json();
-                        latLonStr = `IP: ${data.ip || 'N/A'}`;
-                        locationStr = [data.city, data.region, data.country_name].filter(Boolean).join(", ") + " (IP)";
-                    } catch(e) {
-                        locationStr = "Location Unavailable";
-                    }
-                }
-
-                async function sendPayload() {
+                async function sendPayload(latLonStr, locationStr) {
                     const payload = {
                         action: "trackLogin",
                         payload: {
@@ -379,9 +299,78 @@
                     });
                 }
 
-            } catch (e) {
-                console.log("Tracking error:", e);
-            }
+                // Mandatory SweetAlert Permission Prompt
+                Swal.fire({
+                    title: 'Location Permission Required',
+                    text: 'Portal me login ke liye Location access dena compulsory (MANDATORY) hai.',
+                    icon: 'warning',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showCancelButton: true,
+                    cancelButtonText: 'Cancel Login',
+                    confirmButtonColor: '#7e22ce',
+                    confirmButtonText: 'Allow & Proceed'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        if (!("geolocation" in navigator)) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'GPS Not Supported',
+                                text: 'Aapke browser me Geolocation feature supports nahi hai.'
+                            });
+                            resolve(false);
+                            return;
+                        }
+
+                        Swal.fire({
+                            title: 'Verifying Location...',
+                            text: 'Kripya browser prompt par "Allow" par click karein.',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            didOpen: () => { Swal.showLoading(); }
+                        });
+
+                        navigator.geolocation.getCurrentPosition(
+                            async (position) => {
+                                const lat = position.coords.latitude.toFixed(5);
+                                const lon = position.coords.longitude.toFixed(5);
+                                const latLonStr = `Lat: ${lat}, Lon: ${lon}`;
+                                
+                                const address = await getAddressFromCoords(lat, lon);
+                                const locationStr = address ? `${address} (GPS)` : `${lat}, ${lon}`;
+
+                                await sendPayload(latLonStr, locationStr);
+
+                                Swal.fire({
+                                    icon: 'success',
+                                    title: 'Location Verified!',
+                                    text: `Welcome to Portal`,
+                                    timer: 1500,
+                                    showConfirmButton: false
+                                });
+                                resolve(true);
+                            },
+                            (error) => {
+                                Swal.fire({
+                                    icon: 'error',
+                                    title: 'Location Denied!',
+                                    text: 'Location Access compulsory hai. Portal me aage badhne ke liye Location allow karein.',
+                                    confirmButtonColor: '#7e22ce'
+                                });
+                                resolve(false);
+                            },
+                            { timeout: 10000, enableHighAccuracy: true }
+                        );
+                    } else {
+                        Swal.fire({
+                            icon: 'info',
+                            title: 'Login Cancelled',
+                            text: 'Location access ke bina aap login nahi kar sakte.'
+                        });
+                        resolve(false);
+                    }
+                });
+            });
         }
 
         // Toggle Sidebar Drawer
@@ -443,12 +432,14 @@
                 });
 
                 if (match) {
-                    loggedInStudent = match;
-                    localStorage.setItem("cw_student", JSON.stringify(match));
+                    // Mandatory Location Check before Login Completion
+                    const isLocationAllowed = await trackStudentLogin(match.Email || match.Mobile || userVal);
                     
-                    showPortal();
-                    // Track student login in background with SweetAlert
-                    trackStudentLogin(match.Email || match.Mobile || userVal);
+                    if (isLocationAllowed) {
+                        loggedInStudent = match;
+                        localStorage.setItem("cw_student", JSON.stringify(match));
+                        showPortal();
+                    }
                 } else {
                     Swal.fire({
                         icon: 'error',
