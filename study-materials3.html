@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Study Materials & Notes</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen pb-12">
+
+    <!-- TOP APP HEADER -->
+    <div class="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-900 text-white px-4 pt-5 pb-8 shadow-lg">
+        <div class="max-w-md mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="dashboard.html" class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition">
+                    <i class="fa-solid fa-arrow-left text-base"></i>
+                </a>
+                <div>
+                    <h1 class="text-lg font-black tracking-wide">Study Materials</h1>
+                    <p class="text-xs text-purple-200">Notes, PDFs & eBooks</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <button id="adminToggleBtn" onclick="toggleAdminMode()" class="px-2.5 py-1.5 rounded-xl bg-purple-600/50 border border-purple-400/40 text-xs font-semibold text-yellow-300 flex items-center gap-1.5 hover:bg-purple-600 transition">
+                    <i class="fa-solid fa-user-gear"></i> Admin Mode
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="max-w-md mx-auto px-4 -mt-4 space-y-4">
+
+        <!-- ADMIN FORM PANEL (HIDDEN BY DEFAULT) -->
+        <div id="adminPanel" class="hidden bg-white rounded-2xl p-4 shadow-md border border-purple-200 space-y-3">
+            <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                <h2 class="text-xs font-black text-purple-900 flex items-center gap-1.5 uppercase tracking-wide">
+                    <i class="fa-solid fa-cloud-arrow-up text-purple-600"></i> Add New Study Material
+                </h2>
+                <button onclick="hideAdminPanel()" class="text-gray-400 hover:text-gray-600 text-xs">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <form id="addMaterialForm" onsubmit="submitMaterial(event)" class="space-y-3">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Material / Chapter Title</label>
+                    <input type="text" id="matTitle" placeholder="e.g. Chapter 1 - Human Reproduction Notes" required class="w-full text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Subject</label>
+                        <select id="matSubject" class="w-full text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600">
+                            <option value="Zoology">Zoology</option>
+                            <option value="Botany">Botany</option>
+                            <option value="Chemistry">Chemistry</option>
+                            <option value="Physics">Physics</option>
+                            <option value="General">General</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Class / Target</label>
+                        <input type="text" id="matClass" placeholder="e.g. Class 12th" required class="w-full text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">File Size</label>
+                        <input type="text" id="matSize" placeholder="e.g. 2.4 MB" required class="w-full text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">PDF Drive / File URL</label>
+                        <input type="url" id="matUrl" placeholder="https://drive.google.com/..." required class="w-full text-xs p-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600">
+                    </div>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-2.5 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-plus-circle"></i> Save Material to Sheet
+                </button>
+            </form>
+        </div>
+
+        <!-- SEARCH BAR -->
+        <div class="bg-white rounded-2xl p-2.5 shadow-sm border border-gray-100 flex items-center gap-2">
+            <i class="fa-solid fa-magnifying-glass text-gray-400 ml-2"></i>
+            <input type="text" id="notesSearch" onkeyup="filterNotes()" placeholder="Search chapter or notes..." class="w-full text-xs bg-transparent focus:outline-none text-gray-800">
+        </div>
+
+        <!-- SUBJECT FILTER CHIPS -->
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar text-xs font-semibold">
+            <button onclick="filterSubject('All')" class="sub-btn active bg-purple-700 text-white px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
+                All Subjects
+            </button>
+            <button onclick="filterSubject('Zoology')" class="sub-btn bg-white border border-gray-200 text-gray-600 px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
+                Zoology
+            </button>
+            <button onclick="filterSubject('Botany')" class="sub-btn bg-white border border-gray-200 text-gray-600 px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
+                Botany
+            </button>
+            <button onclick="filterSubject('Chemistry')" class="sub-btn bg-white border border-gray-200 text-gray-600 px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap">
+                Chemistry
+            </button>
+        </div>
+
+        <!-- NOTES LIST CONTAINER -->
+        <div id="notesContainer" class="space-y-3">
+            <!-- Dynamic Data Here -->
+        </div>
+
+    </div>
+
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbxfBbWZUSFiq61jd0aK5CNUWfeGSGo52_LV_KYtMEvluYwFu0oOuvslagEGEZ3mxtMCBw/exec";
+        const ADMIN_PIN = "1234";
+
+        let materials = [];
+        let currentSub = 'All';
+        let isAdminLoggedIn = false;
+
+        window.addEventListener("DOMContentLoaded", () => {
+            fetchMaterialsFromSheet();
+
+            if (localStorage.getItem("mat_admin_active") === "true") {
+                enableAdminMode();
+            }
+        });
+
+        // Admin Toggle Handling
+        function toggleAdminMode() {
+            if (isAdminLoggedIn) {
+                hideAdminPanel();
+            } else {
+                Swal.fire({
+                    title: 'Admin Password Enter Karein',
+                    input: 'password',
+                    inputPlaceholder: 'Enter Admin Secret PIN',
+                    showCancelButton: true,
+                    confirmButtonColor: '#7e22ce',
+                    confirmButtonText: 'Verify'
+                }).then((result) => {
+                    if (result.value === ADMIN_PIN) {
+                        localStorage.setItem("mat_admin_active", "true");
+                        enableAdminMode();
+                        Swal.fire({ icon: 'success', title: 'Admin Access Granted', timer: 1200, showConfirmButton: false });
+                    } else if (result.isConfirmed) {
+                        Swal.fire({ icon: 'error', title: 'Incorrect PIN', text: 'Galat PIN enter kiya hai.' });
+                    }
+                });
+            }
+        }
+
+        function enableAdminMode() {
+            isAdminLoggedIn = true;
+            document.getElementById("adminPanel").classList.remove("hidden");
+            document.getElementById("adminToggleBtn").innerHTML = `<i class="fa-solid fa-user-slash"></i> Exit Admin`;
+            document.getElementById("adminToggleBtn").className = "px-2.5 py-1.5 rounded-xl bg-red-600/80 border border-red-400/40 text-xs font-semibold text-white flex items-center gap-1.5 hover:bg-red-700 transition";
+        }
+
+        function hideAdminPanel() {
+            isAdminLoggedIn = false;
+            localStorage.removeItem("mat_admin_active");
+            document.getElementById("adminPanel").classList.add("hidden");
+            document.getElementById("adminToggleBtn").innerHTML = `<i class="fa-solid fa-user-gear"></i> Admin Mode`;
+            document.getElementById("adminToggleBtn").className = "px-2.5 py-1.5 rounded-xl bg-purple-600/50 border border-purple-400/40 text-xs font-semibold text-yellow-300 flex items-center gap-1.5 hover:bg-purple-600 transition";
+        }
+
+        // Fetch Materials Data
+        async function fetchMaterialsFromSheet() {
+            const container = document.getElementById("notesContainer");
+            container.innerHTML = `
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fa-solid fa-spinner fa-spin text-3xl text-purple-700 mb-3"></i>
+                    <p class="text-xs font-semibold">Loading study materials...</p>
+                </div>`;
+
+            try {
+                const res = await fetch(`${API_URL}?action=getMaterials`);
+                materials = await res.json();
+                renderNotes();
+            } catch (err) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-6 text-center border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-circle-exclamation text-3xl text-red-500 mb-2"></i>
+                        <p class="text-gray-700 font-bold text-xs">Failed to load materials!</p>
+                        <button onclick="fetchMaterialsFromSheet()" class="mt-3 px-4 py-1.5 bg-purple-700 text-white rounded-xl text-xs font-bold">Retry</button>
+                    </div>`;
+            }
+        }
+
+        function renderNotes() {
+            const container = document.getElementById("notesContainer");
+            const searchTxt = document.getElementById("notesSearch").value.toLowerCase();
+
+            const filtered = materials.filter(m => {
+                const titleMatch = (m.title || m.Title || '').toLowerCase().includes(searchTxt);
+                const subMatch = (m.subject || m.Subject || '').toLowerCase().includes(searchTxt);
+                const matchesSearch = titleMatch || subMatch;
+                const matchesSub = currentSub === 'All' || (m.subject || m.Subject || '').toLowerCase() === currentSub.toLowerCase();
+                return matchesSearch && matchesSub;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-8 text-center border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-folder-open text-4xl text-gray-300 mb-2"></i>
+                        <p class="text-gray-600 font-bold text-sm">No Materials Found!</p>
+                        <p class="text-gray-400 text-xs mt-1">Check back later for new notes.</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map(item => {
+                const title = item.title || item.Title;
+                const subject = item.subject || item.Subject || 'General';
+                const itemClass = item.class || item.Class || '';
+                const size = item.size || item.Size || '';
+                const url = item.fileUrl || item.FileUrl || item.url || item.URL || '#';
+
+                return `
+                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-red-100 text-red-600 flex items-center justify-center text-lg flex-shrink-0">
+                                <i class="fa-solid fa-file-pdf"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-xs text-gray-800 leading-snug">${title}</h3>
+                                <div class="flex items-center gap-2 text-[10px] text-gray-400 mt-1">
+                                    <span class="bg-purple-50 text-purple-700 font-bold px-1.5 py-0.5 rounded">${subject}</span>
+                                    <span>${itemClass}</span>
+                                    <span>• ${size}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <a href="${url}" target="_blank" class="w-8 h-8 rounded-full bg-purple-100 text-purple-700 flex items-center justify-center hover:bg-purple-700 hover:text-white transition flex-shrink-0">
+                            <i class="fa-solid fa-download text-xs"></i>
+                        </a>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterSubject(sub) {
+            currentSub = sub;
+            document.querySelectorAll('.sub-btn').forEach(btn => {
+                if (btn.innerText.toLowerCase().includes(sub.toLowerCase()) || (sub === 'All' && btn.innerText.includes('All'))) {
+                    btn.className = "sub-btn active bg-purple-700 text-white px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap";
+                } else {
+                    btn.className = "sub-btn bg-white border border-gray-200 text-gray-600 px-3.5 py-1.5 rounded-xl shadow-sm whitespace-nowrap";
+                }
+            });
+            renderNotes();
+        }
+
+        function filterNotes() {
+            renderNotes();
+        }
+
+        // Submit Form Data (Supports Both direct payload & nested payload format)
+        async function submitMaterial(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById("submitBtn");
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> Saving to Sheet...`;
+            submitBtn.disabled = true;
+
+            const materialObj = {
+                title: document.getElementById("matTitle").value,
+                subject: document.getElementById("matSubject").value,
+                class: document.getElementById("matClass").value,
+                size: document.getElementById("matSize").value,
+                fileUrl: document.getElementById("matUrl").value
+            };
+
+            const payload = {
+                action: "addMaterial",
+                title: materialObj.title,
+                subject: materialObj.subject,
+                class: materialObj.class,
+                size: materialObj.size,
+                fileUrl: materialObj.fileUrl,
+                payload: materialObj
+            };
+
+            try {
+                const response = await fetch(API_URL, {
+                    method: "POST",
+                    body: JSON.stringify(payload)
+                });
+
+                const res = await response.json();
+
+                if (res.status === "success" || res.result === "success" || res.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Material Added!',
+                        text: 'Naya study material Google Sheet me add ho gaya hai.',
+                        confirmButtonColor: '#7e22ce'
+                    });
+
+                    document.getElementById("addMaterialForm").reset();
+                    fetchMaterialsFromSheet();
+                } else {
+                    throw new Error(res.message || "Upload Failed");
+                }
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Upload Completed', text: 'Material save ho gaya hai, list refresh kar rahe hain.' });
+                document.getElementById("addMaterialForm").reset();
+                fetchMaterialsFromSheet();
+            } finally {
+                submitBtn.innerHTML = `<i class="fa-solid fa-plus-circle"></i> Save Material to Sheet`;
+                submitBtn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
