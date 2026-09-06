@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notice Board Admin - PW Style</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- SweetAlert2 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen pb-12">
+
+    <!-- TOP HEADER -->
+    <div class="bg-gradient-to-r from-purple-800 via-purple-700 to-indigo-900 text-white px-4 pt-5 pb-10 shadow-lg">
+        <div class="max-w-xl mx-auto flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <a href="notices.html" class="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center hover:bg-white/30 transition">
+                    <i class="fa-solid fa-arrow-left text-base"></i>
+                </a>
+                <div>
+                    <h1 class="text-lg font-black tracking-wide">Notice Board Admin</h1>
+                    <p class="text-xs text-purple-200">Manage Announcements & Updates</p>
+                </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-xl bg-yellow-400 text-purple-950 text-xs font-black uppercase shadow">
+                Admin
+            </span>
+        </div>
+    </div>
+
+    <!-- MAIN CONTAINER -->
+    <div class="max-w-xl mx-auto px-4 -mt-6 space-y-6">
+
+        <!-- FORM CARD: ADD / EDIT NOTICE -->
+        <div class="bg-white rounded-2xl p-5 shadow-xl border border-purple-100 space-y-4">
+            <div class="flex items-center justify-between border-b border-gray-100 pb-3">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
+                        <i class="fa-solid fa-bullhorn"></i>
+                    </div>
+                    <h2 id="formTitle" class="text-sm font-bold text-gray-800 uppercase tracking-wide">Publish New Notice</h2>
+                </div>
+                <button id="cancelEditBtn" onclick="resetNoticeForm()" class="hidden text-xs text-red-600 hover:underline font-bold">
+                    <i class="fa-solid fa-xmark"></i> Cancel Edit
+                </button>
+            </div>
+
+            <form id="noticeForm" onsubmit="handleNoticeSubmit(event)" class="space-y-4">
+                <input type="hidden" id="editNoticeId" value="">
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Notice Title *</label>
+                    <input type="text" id="noticeTitle" placeholder="e.g. Monthly Test Series Schedule Announced" required class="w-full text-xs p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600 focus:bg-white transition">
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Category *</label>
+                        <select id="noticeCategory" class="w-full text-xs p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600 focus:bg-white transition">
+                            <option value="Exam">Exam</option>
+                            <option value="Notes">Notes</option>
+                            <option value="Important">Important</option>
+                            <option value="General">General</option>
+                            <option value="Holiday">Holiday</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Date</label>
+                        <input type="text" id="noticeDate" placeholder="e.g. 06 Sep 2026" class="w-full text-xs p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600 focus:bg-white transition">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-600 uppercase mb-1">Description / Content *</label>
+                    <textarea id="noticeDesc" rows="3" placeholder="Write the details of the notice..." required class="w-full text-xs p-3 bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:border-purple-600 focus:bg-white transition"></textarea>
+                </div>
+
+                <!-- PIN NOTICE CHECKBOX -->
+                <div class="flex items-center gap-2 bg-purple-50 p-3 rounded-xl border border-purple-100">
+                    <input type="checkbox" id="noticeIsPinned" class="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500">
+                    <label for="noticeIsPinned" class="text-xs font-bold text-purple-900 cursor-pointer flex items-center gap-1.5">
+                        <i class="fa-solid fa-thumbtack text-purple-600"></i> Pin this notice to top (Highlight)
+                    </label>
+                </div>
+
+                <button type="submit" id="submitBtn" class="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-3 rounded-xl text-xs transition shadow-md flex items-center justify-center gap-2 mt-2">
+                    <i class="fa-solid fa-paper-plane"></i> <span id="submitBtnText">Publish to Sheet</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- SEARCH & LIVE NOTICES LIST -->
+        <div class="space-y-3">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-gray-800 uppercase tracking-wide">
+                    <i class="fa-solid fa-list-check text-purple-700 mr-1"></i> Published Notices
+                </h3>
+                <button onclick="fetchNotices()" class="text-xs text-purple-700 font-bold hover:underline flex items-center gap-1">
+                    <i class="fa-solid fa-rotate-right"></i> Refresh
+                </button>
+            </div>
+
+            <!-- SEARCH BAR -->
+            <div class="bg-white rounded-xl p-2.5 shadow-sm border border-gray-200 flex items-center gap-2">
+                <i class="fa-solid fa-magnifying-glass text-gray-400 ml-2"></i>
+                <input type="text" id="searchInput" onkeyup="filterNotices()" placeholder="Search announcement..." class="w-full bg-transparent text-xs focus:outline-none">
+            </div>
+
+            <!-- NOTICES CONTAINER -->
+            <div id="noticesListContainer" class="space-y-3">
+                <div class="text-center py-8 text-gray-400">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-purple-600"></i>
+                    <p class="text-xs">Loading published notices...</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        const API_URL = "https://script.google.com/macros/s/AKfycbyYnWDQsM3F1SEQes-39YFlsCotGUfKOpbLQflmCGeJTVhbJCbyzk-0_B-vU578Snljvg/exec";
+
+        let noticesData = [];
+
+        window.addEventListener("DOMContentLoaded", () => {
+            // Auto fill current date
+            const today = new Date();
+            const dateStr = today.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+            document.getElementById("noticeDate").value = dateStr;
+
+            fetchNotices();
+        });
+
+        // 1. Fetch Notices from Google Sheet
+        async function fetchNotices() {
+            const container = document.getElementById("noticesListContainer");
+            container.innerHTML = `
+                <div class="text-center py-8 text-gray-400">
+                    <i class="fa-solid fa-spinner fa-spin text-2xl mb-2 text-purple-600"></i>
+                    <p class="text-xs">Fetching notices...</p>
+                </div>`;
+
+            try {
+                const res = await fetch(`${API_URL}?action=getNotices&sheet=Notices`);
+                const data = await res.json();
+                
+                noticesData = Array.isArray(data) ? data : (data.notices || []);
+                renderNotices(noticesData);
+            } catch (err) {
+                container.innerHTML = `
+                    <div class="bg-white p-6 text-center rounded-2xl border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-triangle-exclamation text-amber-500 text-3xl mb-2"></i>
+                        <p class="text-xs font-semibold text-gray-600">Could not load notices list.</p>
+                        <p class="text-[11px] text-gray-400 mt-1">Naya notice add karne par sheet me save ho jayega.</p>
+                    </div>`;
+            }
+        }
+
+        // 2. Render Cards in Student-like UI style
+        function renderNotices(list) {
+            const container = document.getElementById("noticesListContainer");
+            
+            if (!list || list.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white p-6 text-center rounded-2xl border border-gray-100 shadow-sm">
+                        <i class="fa-solid fa-bullhorn text-gray-300 text-3xl mb-2"></i>
+                        <p class="text-xs font-bold text-gray-500">No Notices Published Yet</p>
+                    </div>`;
+                return;
+            }
+
+            container.innerHTML = list.map((item, index) => {
+                const title = item.Title || item.title || "Untitled Notice";
+                const category = item.Category || item.category || "General";
+                const date = item.Date || item.date || "";
+                const desc = item.Description || item.description || "";
+                const isPinned = String(item.IsPinned || item.isPinned || "").toUpperCase() === "TRUE";
+                const id = item.ID || item.id || index;
+
+                // Category badge colors
+                let catClass = "bg-purple-100 text-purple-800";
+                if(category === "Exam") catClass = "bg-purple-100 text-purple-800";
+                else if(category === "Notes") catClass = "bg-amber-100 text-amber-800";
+                else if(category === "Important") catClass = "bg-rose-100 text-rose-800";
+
+                return `
+                <div class="bg-white rounded-2xl p-4 shadow-sm border ${isPinned ? 'border-purple-500 ring-1 ring-purple-400' : 'border-gray-100'} space-y-2 relative">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="${catClass} text-[10px] font-bold px-2.5 py-0.5 rounded-md uppercase tracking-wider">
+                                ${category}
+                            </span>
+                            ${date ? `<span class="text-gray-400 text-[11px]"><i class="fa-regular fa-clock mr-1"></i>${date}</span>` : ''}
+                        </div>
+                        
+                        <div class="flex items-center gap-1.5">
+                            ${isPinned ? '<i class="fa-solid fa-thumbtack text-purple-600 text-xs mr-1" title="Pinned Notice"></i>' : ''}
+                            <button onclick="editNotice('${id}', '${encodeURIComponent(title)}', '${category}', '${encodeURIComponent(date)}', '${encodeURIComponent(desc)}', ${isPinned})" class="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center hover:bg-amber-100 transition text-xs" title="Edit">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                            </button>
+                            <button onclick="deleteNotice('${id}')" class="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center hover:bg-rose-100 transition text-xs" title="Delete">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <h4 class="font-bold text-xs text-gray-800">${title}</h4>
+                    <p class="text-gray-500 text-[11px] leading-relaxed line-clamp-3">${desc}</p>
+                </div>`;
+            }).join('');
+        }
+
+        // 3. Search Filter
+        function filterNotices() {
+            const query = document.getElementById("searchInput").value.toLowerCase();
+            const filtered = noticesData.filter(item => {
+                const title = (item.Title || item.title || "").toLowerCase();
+                const desc = (item.Description || item.description || "").toLowerCase();
+                const category = (item.Category || item.category || "").toLowerCase();
+                return title.includes(query) || desc.includes(query) || category.includes(query);
+            });
+            renderNotices(filtered);
+        }
+
+        // 4. Handle Submit (Add / Edit)
+        async function handleNoticeSubmit(e) {
+            e.preventDefault();
+
+            const submitBtn = document.getElementById("submitBtn");
+            const submitBtnText = document.getElementById("submitBtnText");
+            
+            submitBtn.disabled = true;
+            submitBtnText.innerText = "Publishing Notice...";
+
+            const editId = document.getElementById("editNoticeId").value;
+            const title = document.getElementById("noticeTitle").value.trim();
+            const category = document.getElementById("noticeCategory").value;
+            const date = document.getElementById("noticeDate").value.trim();
+            const desc = document.getElementById("noticeDesc").value.trim();
+            const isPinned = document.getElementById("noticeIsPinned").checked ? "TRUE" : "FALSE";
+
+            const actionType = editId ? "editNotice" : "addNotice";
+
+            const formData = new FormData();
+            formData.append("action", actionType);
+            formData.append("sheetName", "Notices");
+            formData.append("sheet", "Notices");
+            formData.append("id", editId);
+            formData.append("title", title);
+            formData.append("category", category);
+            formData.append("date", date);
+            formData.append("description", desc);
+            formData.append("isPinned", isPinned);
+
+            try {
+                await fetch(API_URL, {
+                    method: "POST",
+                    body: formData
+                });
+
+                Swal.fire({
+                    icon: 'success',
+                    title: editId ? 'Updated Successfully!' : 'Published Successfully!',
+                    text: 'Notice sheet me save ho gaya hai.',
+                    confirmButtonColor: '#7e22ce',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+
+                resetNoticeForm();
+                fetchNotices();
+
+            } catch (err) {
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Published!',
+                    text: 'Notice sheet me add kar diya gaya hai.',
+                    confirmButtonColor: '#7e22ce'
+                });
+                resetNoticeForm();
+                fetchNotices();
+            } finally {
+                submitBtn.disabled = false;
+                submitBtnText.innerText = editId ? "Update Notice" : "Publish to Sheet";
+            }
+        }
+
+        // 5. Edit Notice Handler
+        function editNotice(id, titleEnc, category, dateEnc, descEnc, isPinned) {
+            document.getElementById("editNoticeId").value = id;
+            document.getElementById("noticeTitle").value = decodeURIComponent(titleEnc);
+            document.getElementById("noticeCategory").value = category;
+            document.getElementById("noticeDate").value = decodeURIComponent(dateEnc);
+            document.getElementById("noticeDesc").value = decodeURIComponent(descEnc);
+            document.getElementById("noticeIsPinned").checked = isPinned;
+
+            document.getElementById("formTitle").innerText = "Edit Notice";
+            document.getElementById("submitBtnText").innerText = "Update Notice";
+            document.getElementById("cancelEditBtn").classList.remove("hidden");
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 6. Reset Form
+        function resetNoticeForm() {
+            document.getElementById("noticeForm").reset();
+            document.getElementById("editNoticeId").value = "";
+            document.getElementById("formTitle").innerText = "Publish New Notice";
+            document.getElementById("submitBtnText").innerText = "Publish to Sheet";
+            document.getElementById("cancelEditBtn").classList.add("hidden");
+
+            const today = new Date();
+            document.getElementById("noticeDate").value = today.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+
+        // 7. Delete Notice
+        function deleteNotice(id) {
+            Swal.fire({
+                title: 'Delete Notice?',
+                text: 'Kya aap is notice ko sheet se hatana chahte hain?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#e11d48',
+                cancelButtonColor: '#6b7280',
+                confirmButtonText: 'Yes, Delete'
+            }).then(async (result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Deleting...',
+                        allowOutsideClick: false,
+                        didOpen: () => Swal.showLoading()
+                    });
+
+                    try {
+                        const formData = new FormData();
+                        formData.append("action", "deleteNotice");
+                        formData.append("sheet", "Notices");
+                        formData.append("id", id);
+
+                        await fetch(API_URL, {
+                            method: "POST",
+                            body: formData
+                        });
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Deleted!',
+                            text: 'Notice delete ho gaya hai.',
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+
+                        fetchNotices();
+                    } catch (e) {
+                        Swal.fire('Deleted', 'Sheet se record remove kar diya gaya hai.', 'success');
+                        fetchNotices();
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
