@@ -232,35 +232,75 @@
 
         // Track Login Activity Function
         async function trackStudentLogin(studentEmail) {
-            try {
-                // IP & Location Fetching
-                const ipRes = await fetch('https://ipapi.co/json/').catch(() => null);
-                const ipData = ipRes ? await ipRes.json() : {};
+    try {
+        // 1. IP & Location Fetching (With Fallback)
+        let locationStr = "Unknown";
+        let ipAddress = "N/A";
 
-                // Device Detection
-                const isMobile = /Mobi|Android|iPhone/i.test(navigator.userAgent);
-                const deviceType = isMobile ? "Mobile" : "Desktop/Laptop";
-
-                const payload = {
-                    action: "trackLogin",
-                    payload: {
-                        studentEmail: studentEmail,
-                        device: deviceType,
-                        ipAddress: ipData.ip || "N/A",
-                        location: (ipData.city ? ipData.city + ", " : "") + (ipData.region ? ipData.region + ", " : "") + (ipData.country_name || "Unknown"),
-                        browser: navigator.userAgent.includes("Chrome") ? "Chrome" : navigator.userAgent.includes("Firefox") ? "Firefox" : "Other Browser",
-                        os: navigator.platform
-                    }
-                };
-
-                fetch(API_URL, {
-                    method: "POST",
-                    body: JSON.stringify(payload)
-                });
-            } catch (e) {
-                console.log("Tracking error:", e);
+        try {
+            const ipRes = await fetch('https://ipapi.co/json/').catch(() => null);
+            if (ipRes && ipRes.ok) {
+                const ipData = await ipRes.json();
+                ipAddress = ipData.ip || "N/A";
+                const city = ipData.city || "";
+                const region = ipData.region || "";
+                const country = ipData.country_name || "";
+                locationStr = [city, region, country].filter(Boolean).join(", ");
+            } else {
+                // Fallback API if ipapi is blocked
+                const altRes = await fetch('https://ip-api.com/json/').catch(() => null);
+                if (altRes && altRes.ok) {
+                    const altData = await altRes.json();
+                    ipAddress = altData.query || "N/A";
+                    locationStr = `${altData.city || ''}, ${altData.regionName || ''}, ${altData.country || ''}`;
+                }
             }
+        } catch (e) {
+            console.log("Location fetch error:", e);
         }
+
+        // 2. Exact Browser Detection Logic (Detects Opera, Edge, Chrome, Safari)
+        const ua = navigator.userAgent;
+        let detectedBrowser = "Other Browser";
+
+        if (ua.includes("OPR") || ua.includes("Opera")) {
+            detectedBrowser = "Opera";
+        } else if (ua.includes("Edg")) {
+            detectedBrowser = "Microsoft Edge";
+        } else if (ua.includes("Chrome")) {
+            detectedBrowser = "Chrome";
+        } else if (ua.includes("Safari")) {
+            detectedBrowser = "Safari";
+        } else if (ua.includes("Firefox")) {
+            detectedBrowser = "Firefox";
+        }
+
+        // 3. Device Type Detection
+        const isMobile = /Mobi|Android|iPhone/i.test(ua);
+        const deviceType = isMobile ? "Mobile" : "Desktop/Laptop";
+
+        // 4. Payload Generation
+        const payload = {
+            action: "trackLogin",
+            payload: {
+                studentEmail: studentEmail,
+                device: deviceType,
+                ipAddress: ipAddress,
+                location: locationStr || "Unknown Location",
+                browser: detectedBrowser,
+                os: navigator.platform
+            }
+        };
+
+        // Send data to Apps Script
+        fetch(API_URL, {
+            method: "POST",
+            body: JSON.stringify(payload)
+        });
+    } catch (e) {
+        console.log("Tracking error:", e);
+    }
+}
 
         // Toggle Sidebar Drawer
         function toggleSidebar() {
