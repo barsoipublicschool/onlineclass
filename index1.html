@@ -289,6 +289,20 @@
                 } else if (ua.includes("Firefox")) {
                     detectedBrowser = "Firefox";
                 }
+                // Exact OS Detection Logic
+                let detectedOS = navigator.platform;
+                if (/Android/i.test(ua)) {
+                    const match = ua.match(/Android\s([0-9\.]+)/i);
+                    detectedOS = match ? `Android ${match[1]}` : "Android";
+                } else if (/iPhone|iPad|iPod/i.test(ua)) {
+                    detectedOS = "iOS";
+                } else if (/Win/i.test(navigator.platform)) {
+                    detectedOS = "Windows";
+                } else if (/Mac/i.test(navigator.platform)) {
+                    detectedOS = "macOS";
+                } else if (/Linux/i.test(navigator.platform)) {
+                    detectedOS = "Linux";
+                }
 
                 const getAddressFromCoords = async (lat, lon) => {
                     try {
@@ -304,21 +318,6 @@
                         return null;
                     }
                 };
-
-                // Exact OS Detection Logic
-                let detectedOS = navigator.platform;
-                if (/Android/i.test(ua)) {
-                    const match = ua.match(/Android\s([0-9\.]+)/i);
-                    detectedOS = match ? `Android ${match[1]}` : "Android";
-                } else if (/iPhone|iPad|iPod/i.test(ua)) {
-                    detectedOS = "iOS";
-                } else if (/Win/i.test(navigator.platform)) {
-                    detectedOS = "Windows";
-                } else if (/Mac/i.test(navigator.platform)) {
-                    detectedOS = "macOS";
-                } else if (/Linux/i.test(navigator.platform)) {
-                    detectedOS = "Linux";
-                }
 
                 async function sendPayload(latLonStr, locationStr) {
                     const payload = {
