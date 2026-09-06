@@ -11,7 +11,7 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 
-        /* Custom YouTube Branding Masking */
+        /* Custom YouTube Branding Masking Container */
         .yt-clean-container {
             position: relative;
             width: 100%;
@@ -21,32 +21,59 @@
             border-radius: 12px;
             background: #000;
         }
+
+        /* Normal & Fullscreen Iframe Zooming to Hide Top/Bottom Bars */
         .yt-clean-container iframe {
             position: absolute;
-            top: -60px; /* Top title/channel header overlay ko crop/hide karta hai */
+            top: -65px; 
             left: 0;
             width: 100%;
-            height: calc(100% + 120px); /* Bottom branding ko container ke bahar push karta hai */
+            height: calc(100% + 125px); 
             pointer-events: auto;
         }
-        /* Dynamic Overlay Guards to prevent clicking channel/YouTube branding */
+
+        /* Custom Pure Fullscreen Overlay Guard */
+        .yt-clean-container.app-fullscreen-mode {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            padding-bottom: 0 !important;
+            z-index: 999999 !important;
+            border-radius: 0 !important;
+        }
+
+        .yt-clean-container.app-fullscreen-mode iframe {
+            top: -70px !important;
+            height: calc(100vh + 140px) !important;
+        }
+
+        /* Controls & Transparent Guards */
         .yt-top-guard {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            height: 60px;
+            height: 65px;
             z-index: 20;
             background: transparent;
         }
-        .yt-bottom-right-guard {
+        
+        .yt-custom-fullscreen-btn {
             position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 120px;
-            height: 45px;
-            z-index: 20;
-            background: transparent;
+            bottom: 12px;
+            right: 12px;
+            z-index: 30;
+            background: rgba(15, 23, 42, 0.85);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: bold;
+            cursor: pointer;
+            backdrop-filter: blur(4px);
         }
     </style>
 </head>
@@ -117,7 +144,6 @@
     <script>
         const API_URL = "https://script.google.com/macros/s/AKfycbyYnWDQsM3F1SEQes-39YFlsCotGUfKOpbLQflmCGeJTVhbJCbyzk-0_B-vU578Snljvg/exec";
         
-        // URL Parameter se Course ID fetch karein (e.g. learn.html?courseId=CRS-101)
         const urlParams = new URLSearchParams(window.location.search);
         const currentCourseId = urlParams.get('courseId') || 'CRS-101';
 
@@ -130,7 +156,6 @@
             loadLectures();
         });
 
-        // 1. Fetch Course Metadata Title & Category
         async function fetchCourseMetaData() {
             try {
                 const response = await fetch(`${API_URL}?action=getCourses`);
@@ -151,7 +176,6 @@
             }
         }
 
-        // 2. Fetch Lectures List from Google Sheets
         async function loadLectures() {
             const container = document.getElementById("lectureList");
             container.innerHTML = `
@@ -182,7 +206,6 @@
             }
         }
 
-        // 3. Render Lectures Filtered by Tabs
         function renderLectures() {
             const container = document.getElementById("lectureList");
 
@@ -229,7 +252,6 @@
             }).join('');
         }
 
-        // 4. Switch Category Filter Tabs
         function switchFilter(type) {
             activeFilter = type;
             document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -243,7 +265,26 @@
             renderLectures();
         }
 
-        // 5. Play Video or Open PDF in SweetAlert Modal with Clean YouTube Masking
+        // Custom Fullscreen Mode Switcher
+        function toggleAppFullscreen(btn) {
+            const container = btn.closest('.yt-clean-container');
+            if (!container) return;
+
+            if (!container.classList.contains('app-fullscreen-mode')) {
+                container.classList.add('app-fullscreen-mode');
+                btn.innerHTML = `<i class="fa-solid fa-compress mr-1"></i> Exit Fullscreen`;
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(() => {});
+                }
+            } else {
+                container.classList.remove('app-fullscreen-mode');
+                btn.innerHTML = `<i class="fa-solid fa-expand mr-1"></i> Fullscreen`;
+                if (document.exitFullscreen && document.fullscreenElement) {
+                    document.exitFullscreen().catch(() => {});
+                }
+            }
+        }
+
         function playMedia(type, url, title) {
             if (!url) {
                 Swal.fire({
@@ -263,7 +304,6 @@
             if (isVideo) {
                 let videoId = "";
 
-                // Extract Video ID from various URL formats
                 if (url.includes("v=")) {
                     videoId = url.split("v=")[1].split("&")[0];
                 } else if (url.includes("youtu.be/")) {
@@ -274,20 +314,21 @@
                     videoId = url;
                 }
 
-                // YouTube Clean Masking Parameters
-                const cleanParams = "autoplay=1&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=1&playsinline=1&enablejsapi=1";
+                // fs=0 strictly disables native unmasked YouTube full screen
+                const cleanParams = "autoplay=1&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&fs=0&playsinline=1&controls=1&enablejsapi=1";
                 const embedUrl = `https://www.youtube-nocookie.com/embed/${videoId}?${cleanParams}`;
 
                 embedHtml = `
                     <div class="yt-clean-container shadow-2xl border border-gray-800">
                         <div class="yt-top-guard"></div>
-                        <div class="yt-bottom-right-guard"></div>
+                        <button onclick="toggleAppFullscreen(this)" class="yt-custom-fullscreen-btn">
+                            <i class="fa-solid fa-expand mr-1"></i> Fullscreen
+                        </button>
                         <iframe 
                             src="${embedUrl}" 
                             title="${title}"
                             frameborder="0" 
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                            allowfullscreen>
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture">
                         </iframe>
                     </div>`;
             } else {
@@ -306,7 +347,9 @@
                 background: '#0f172a',
                 color: '#fff',
                 willClose: () => {
-                    // Modal close hone par video playback stop karne ke liye
+                    if (document.fullscreenElement && document.exitFullscreen) {
+                        document.exitFullscreen().catch(() => {});
+                    }
                     const iframe = document.querySelector('.yt-clean-container iframe');
                     if (iframe) iframe.src = "";
                 }
