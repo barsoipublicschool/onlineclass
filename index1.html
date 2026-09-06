@@ -319,7 +319,7 @@
                     }
                 };
 
-                async function sendPayload(latLonStr, locationStr) {
+                                async function sendPayload(latLonStr, locationStr) {
                     const payload = {
                         action: "trackLogin",
                         payload: {
@@ -328,7 +328,7 @@
                             ipAddress: latLonStr,
                             location: locationStr,
                             browser: detectedBrowser,
-                            os: navigator.platform
+                            os: detectedOS // <-- Yahan navigator.platform ki jagah detectedOS karein
                         }
                     };
 
